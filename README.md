@@ -2354,7 +2354,11 @@ Document Version and Build During Collection
   - Load count
   - Load time (newer versions of Volatility only)
   - DLL file path
-- Show information for specific IDs (-p)
+ 
+**Important Parameters**
+- `--pid`: show infomration for specific process IDs
+- `--dump`: extract DLLs from the memory image
+
 - The command line displayed for the process provides full path information, including arguments provided
 - LoadTime can help detect anomalies like DLL injection
 - A complete list of DLLs can be too much data to review; consider limiting output to specific PIDs with the -p option
