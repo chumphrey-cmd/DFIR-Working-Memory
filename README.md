@@ -5100,7 +5100,7 @@ Notes
   - ```zcat 2019-12-*/dns.*.gz | jq -r 'select(.rcode_name != "NOERROR") | .qtype_name' | sort | uniq -c | sort -nr```
 - For each query type, what were the response codes
   - ```zcat 2019-12-*/dns.*.gz | jq -cr 'select(.rcode_name != "NOERROR") | { qtype_name, rcode_name }'  | sort | uniq -c | sort -nr
-```
+
 - Top 20 queried hostnames
   - ```zcat 2019-12-*/dns.*.gz | jq -r 'select(.rcode_name == "NOERROR") | .query' | sort | uniq -c | sort -nr | head -n 20```
 - Top 20 queried hostnames that did not return successfully
