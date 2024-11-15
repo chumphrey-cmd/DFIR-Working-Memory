@@ -2463,6 +2463,8 @@ Document Version and Build During Collection
 - Vista+
   - netscan: All of the above--scan for both connections and sockets
 
+ ______ **UPDATE WITH MY PERSONAL NOTES HERE** ______
+
 <br>
 
 ### netstat
