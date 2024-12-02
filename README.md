@@ -1,6 +1,6 @@
 # PURPOSE
 
-- SANS FOR508 content forked from: https://github.com/w00d33/w00d33.github.io
+- **FORENSICS-AND-THREAT-HUNTING** content forked from: https://github.com/w00d33/w00d33.github.io and is currently being updated.
 
 The content here is to be iteratively refined, updated, and maintained with relevant and new information as of 2024. The intent is to maintain and continually organize this information for both myself and other Blue Teamers out there.
 
