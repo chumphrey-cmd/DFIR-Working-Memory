@@ -314,12 +314,7 @@
     - [SMB Analysis Goals](#smb-analysis-goals)
     - [Filter and Review SMB](#filter-and-review-smb)
 
-
-
-
 ---
-
-
 
 # (1) Incident Response
 
@@ -364,15 +359,10 @@
 ## Dynamic Approach to Incident Response
 ![DAIR Framework](<files/DAIR Framework.png>)
 
-
-
 ## Incident Response Hierarchy of Needs
 <img alt="Hierarchy with explanations" src="https://raw.githubusercontent.com/swannman/ircapabilities/master/hierarchy.png" />
 
 [Ref: Matt Swann](https://github.com/swannman/ircapabilities)
-
-
-
 
 ## Attack Lifecycle
 <img alt="Micosoft's Attack Lifecycle" src="https://docs.microsoft.com/en-us/advanced-threat-analytics/media/attack-kill-chain-small.jpg" />
@@ -1170,11 +1160,23 @@ mimikatz # token:elevate /domain admin (identifies any domain admins present on 
 - First execution (creation date -10 seconds)
 - Last execution (modified date -10 seconds)
 
-**Analysis**
+**Usage**
 - Can be analyzed with PECmd.exe ```PECmd.exe -d "C:\Windows\Prefetch" --csv "G:\cases" -q```  
 - [PECmd](https://github.com/EricZimmerman/PECmd)
 
+```
+PECmd.exe -d "<dir of PF files>" --csv "<dir>" -q
+```
 
+**Options:**
+
+* **-d "[dir of PF files]":** Dir to recursively process
+* **-f "<filename>":** File to process
+* **-q:** Quiet Output; use w/ --CSV
+* **-k:** Comma Separated Keywords
+* **--csv "[dir]":** Dir to save CSV (tab separated)
+* **--csvf name:** Filename to save CSV
+* **--html "[dir]":** Dir to save html
 
 ### ShimCache - Application Compatibility
 - Available on workstations AND Servers
